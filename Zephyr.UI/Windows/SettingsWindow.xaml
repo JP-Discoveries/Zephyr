@@ -1,0 +1,311 @@
+<Window x:Class="Zephyr.UI.Windows.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Zephyr — Settings" Height="540" Width="740"
+        Icon="{StaticResource ZephyrAppIcon}"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize" MinWidth="600" MinHeight="420"
+        ShowInTaskbar="False"
+        Background="{DynamicResource ZephyrBackground}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="190"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── Sidebar ────────────────────────────────────────────────── -->
+        <Border Grid.Column="0" Grid.Row="0"
+                Background="{DynamicResource ZephyrSurface}"
+                BorderBrush="{DynamicResource ZephyrBorder}"
+                BorderThickness="0,0,1,0">
+            <StackPanel Margin="0,16,0,0">
+                <TextBlock Text="SETTINGS" FontSize="10" FontWeight="SemiBold"
+                           Foreground="{DynamicResource ZephyrTextSecondary}"
+                           Margin="16,0,0,10"/>
+                <ListBox x:Name="NavList" BorderThickness="0" Background="Transparent"
+                         SelectionChanged="Nav_SelectionChanged">
+                    <ListBoxItem Padding="16,10" FontSize="13"
+                                 Foreground="{DynamicResource ZephyrTextPrimary}">General</ListBoxItem>
+                    <ListBoxItem Padding="16,10" FontSize="13"
+                                 Foreground="{DynamicResource ZephyrTextPrimary}">Appearance</ListBoxItem>
+                    <ListBoxItem Padding="16,10" FontSize="13"
+                                 Foreground="{DynamicResource ZephyrTextPrimary}">Advanced</ListBoxItem>
+                </ListBox>
+            </StackPanel>
+        </Border>
+
+        <!-- ── Content ───────────────────────────────────────────────── -->
+        <ScrollViewer Grid.Column="1" Grid.Row="0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <Grid Margin="32,24,32,24">
+
+                <!-- General -->
+                <StackPanel x:Name="GeneralPage">
+                    <TextBlock Text="General" FontSize="20" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextPrimary}" Margin="0,0,0,24"/>
+
+                    <TextBlock Text="FILES" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,8"/>
+                    <Border BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="0,0,0,1" Margin="0,0,0,16"/>
+
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Show hidden files" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Display files and folders marked as hidden (also shows system files)"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <CheckBox x:Name="ShowHiddenCheck" Grid.Column="1" VerticalAlignment="Center"
+                                  Checked="ShowHidden_Changed" Unchecked="ShowHidden_Changed"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Show system files" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Display files protected by the operating system (follows hidden files toggle)"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <CheckBox x:Name="ShowSystemCheck" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Show file extensions" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Display file extensions at the end of file names (e.g. document.txt)"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <CheckBox x:Name="ShowFileExtensionsCheck" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Highlight recently interacted files/folders" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Show an accent border on items you recently opened, renamed, or created"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <CheckBox x:Name="ShowRecentlyInteractedCheck" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,28">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Sort recently interacted files/folders to top" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Recently interacted items appear at the top of the file list, sorted by time"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <CheckBox x:Name="SortByRecentlyInteractedCheck" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <TextBlock Text="FOLDER &amp; CLOUD" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,8"/>
+                    <Border BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="0,0,0,1" Margin="0,0,0,16"/>
+
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Calculate folder sizes" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Show total size of folder contents in the Size column (background calculation)"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <CheckBox x:Name="ShowFolderSizesCheck" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,28">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Show cloud sync badges" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Display a ☁ badge on files inside OneDrive, Dropbox, or Google Drive folders"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <CheckBox x:Name="ShowCloudBadgesCheck" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <TextBlock Text="STARTUP" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,8"/>
+                    <Border BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="0,0,0,1" Margin="0,0,0,16"/>
+
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Launch maximized" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Open Zephyr maximized each time it starts"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <CheckBox x:Name="LaunchMaximizedCheck" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <TextBlock Text="Default startup path" FontSize="13"
+                               Foreground="{DynamicResource ZephyrTextPrimary}" Margin="0,0,0,6"/>
+                    <TextBlock Text="Leave blank to open the user profile folder on launch"
+                               FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,10"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="StartupPathBox" Grid.Column="0" FontSize="13" Padding="6,5"
+                                 Background="{DynamicResource ZephyrElevated}"
+                                 Foreground="{DynamicResource ZephyrTextPrimary}"
+                                 BorderBrush="{DynamicResource ZephyrBorder}"/>
+                        <Button Grid.Column="1" Content="Browse" Margin="8,0,0,0" Padding="12,5"
+                                Click="Browse_Click" FontSize="13"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Appearance -->
+                <StackPanel x:Name="AppearancePage" Visibility="Collapsed">
+                    <TextBlock Text="Appearance" FontSize="20" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextPrimary}" Margin="0,0,0,24"/>
+
+                    <TextBlock Text="THEME" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,8"/>
+                    <Border BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="0,0,0,1" Margin="0,0,0,16"/>
+
+                    <TextBlock Text="Choose how Zephyr looks. The theme takes effect immediately after clicking Save."
+                               FontSize="12" Foreground="{DynamicResource ZephyrTextSecondary}"
+                               TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+                    <RadioButton x:Name="ThemeAuto" GroupName="Theme" Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="Auto (match Windows)" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Follows the Windows dark / light mode setting"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton x:Name="ThemeDark" GroupName="Theme" Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="Always Dark" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Use the dark theme regardless of system setting"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton x:Name="ThemeLight" GroupName="Theme" Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="Always Light" FontSize="13"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                            <TextBlock Text="Use the light theme regardless of system setting"
+                                       FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+
+                <!-- Advanced -->
+                <StackPanel x:Name="AdvancedPage" Visibility="Collapsed">
+                    <TextBlock Text="Advanced" FontSize="20" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextPrimary}" Margin="0,0,0,24"/>
+
+                    <TextBlock Text="SHELL INTEGRATION" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,8"/>
+                    <Border BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="0,0,0,1" Margin="0,0,0,16"/>
+                    <TextBlock Text='Adds "Open in Zephyr" to the right-click context menu for folders in Windows Explorer.'
+                               FontSize="12" Foreground="{DynamicResource ZephyrTextSecondary}"
+                               TextWrapping="Wrap" Margin="0,0,0,14"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button x:Name="ContextMenuBtn" Padding="12,6" FontSize="13" Click="ContextMenu_Click"/>
+                        <TextBlock x:Name="ContextMenuStatus" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="14,0,0,0"/>
+                    </StackPanel>
+
+                    <TextBlock Text="PORTABLE MODE" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,24,0,8"/>
+                    <Border BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="0,0,0,1" Margin="0,0,0,16"/>
+                    <TextBlock Text="When enabled, settings are saved next to the executable instead of in AppData. Useful for running Zephyr from a USB drive."
+                               FontSize="12" Foreground="{DynamicResource ZephyrTextSecondary}"
+                               TextWrapping="Wrap" Margin="0,0,0,14"/>
+                    <Button x:Name="PortableModeBtn" Padding="12,6" FontSize="13"
+                            HorizontalAlignment="Left" Click="PortableMode_Click" Margin="0,0,0,12"/>
+                    <TextBlock Text="Settings file location:" FontSize="11"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="PortablePathText" FontSize="11"
+                               Foreground="{DynamicResource ZephyrTextSecondary}"
+                               TextWrapping="Wrap" Opacity="0.7"/>
+
+                    <!-- Default File Manager -->
+                    <TextBlock Text="DEFAULT FILE MANAGER" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,28,0,8"/>
+                    <Border BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="0,0,0,1" Margin="0,0,0,16"/>
+                    <TextBlock Text="Register Zephyr to open folders and drives instead of Windows File Explorer."
+                               FontSize="12" Foreground="{DynamicResource ZephyrTextSecondary}"
+                               TextWrapping="Wrap" Margin="0,0,0,14"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                        <Button x:Name="DefaultFMBtn" Padding="12,6" FontSize="13" Click="DefaultFM_Click"/>
+                        <TextBlock x:Name="DefaultFMStatus" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="14,0,0,0"/>
+                    </StackPanel>
+
+                    <CheckBox x:Name="CaptureWinECheck" Margin="0,0,0,4" Click="CaptureWinE_Click">
+                        <TextBlock Text="Capture Windows+E shortcut" FontSize="13"
+                                   Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                    </CheckBox>
+                    <TextBlock Text="Installs a background helper that intercepts Windows+E at the keyboard level — works even when Zephyr is closed. The helper starts automatically with Windows."
+                               FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}"
+                               Margin="22,0,0,16" TextWrapping="Wrap"/>
+
+                    <CheckBox x:Name="StartupCheck" Margin="0,0,0,4" Click="Startup_Click">
+                        <TextBlock Text="Launch Zephyr at Windows startup" FontSize="13"
+                                   Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                    </CheckBox>
+                    <TextBlock Text="Zephyr will start automatically when you log in."
+                               FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}"
+                               Margin="22,0,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+
+            </Grid>
+        </ScrollViewer>
+
+        <!-- ── Footer ────────────────────────────────────────────────── -->
+        <Border Grid.ColumnSpan="2" Grid.Row="1"
+                Background="{DynamicResource ZephyrSurface}"
+                BorderBrush="{DynamicResource ZephyrBorder}"
+                BorderThickness="0,1,0,0" Padding="16,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click"/>
+                <Button Content="Save"   Width="80" IsDefault="True"  Click="Save_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

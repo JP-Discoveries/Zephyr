@@ -1,0 +1,125 @@
+<Window x:Class="Zephyr.UI.Dialogs.BatchRenameDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Batch Rename" Height="520" Width="640"
+        Icon="{StaticResource ZephyrAppIcon}"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize" MinWidth="500" MinHeight="400"
+        ShowInTaskbar="False"
+        Background="{DynamicResource ZephyrBackground}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Pattern -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>  <!-- Find &amp; Replace -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>  <!-- Case -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="*"/>     <!-- Preview -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>  <!-- Buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Pattern -->
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Name Pattern"
+                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                       FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBox x:Name="PatternBox" FontSize="13" Padding="6,4"
+                     Background="{DynamicResource ZephyrElevated}"
+                     Foreground="{DynamicResource ZephyrTextPrimary}"
+                     BorderBrush="{DynamicResource ZephyrBorder}"
+                     TextChanged="Pattern_Changed"/>
+            <WrapPanel Margin="0,5,0,0">
+                <Button Margin="2" Padding="5,2" FontSize="11" Click="Token_Click" Tag="{}{name}">{}{name}</Button>
+                <Button Margin="2" Padding="5,2" FontSize="11" Click="Token_Click" Tag="{}{ext}" >{}{ext}</Button>
+                <Button Margin="2" Padding="5,2" FontSize="11" Click="Token_Click" Tag="{}{n}"   >{}{n}</Button>
+                <Button Margin="2" Padding="5,2" FontSize="11" Click="Token_Click" Tag="{}{nn}"  >{}{nn}</Button>
+                <Button Margin="2" Padding="5,2" FontSize="11" Click="Token_Click" Tag="{}{nnn}" >{}{nnn}</Button>
+            </WrapPanel>
+        </StackPanel>
+
+        <!-- Find &amp; Replace -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="80"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Find" Foreground="{DynamicResource ZephyrTextSecondary}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBox x:Name="FindBox" FontSize="13" Padding="6,4"
+                         Background="{DynamicResource ZephyrElevated}"
+                         Foreground="{DynamicResource ZephyrTextPrimary}"
+                         BorderBrush="{DynamicResource ZephyrBorder}"
+                         TextChanged="Pattern_Changed"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Replace With" Foreground="{DynamicResource ZephyrTextSecondary}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBox x:Name="ReplaceBox" FontSize="13" Padding="6,4"
+                         Background="{DynamicResource ZephyrElevated}"
+                         Foreground="{DynamicResource ZephyrTextPrimary}"
+                         BorderBrush="{DynamicResource ZephyrBorder}"
+                         TextChanged="Pattern_Changed"/>
+            </StackPanel>
+            <StackPanel Grid.Column="4" VerticalAlignment="Bottom">
+                <TextBlock Text="Start #" Foreground="{DynamicResource ZephyrTextSecondary}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBox x:Name="StartNumBox" FontSize="13" Padding="6,4" Text="1"
+                         Background="{DynamicResource ZephyrElevated}"
+                         Foreground="{DynamicResource ZephyrTextPrimary}"
+                         BorderBrush="{DynamicResource ZephyrBorder}"
+                         TextChanged="Pattern_Changed"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Case conversion -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal">
+            <TextBlock Text="Case:" Foreground="{DynamicResource ZephyrTextSecondary}"
+                       FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <RadioButton x:Name="CaseNone"  Content="Unchanged" GroupName="Case" IsChecked="True"
+                         Margin="0,0,14,0" VerticalAlignment="Center" Checked="Pattern_Changed"
+                         Foreground="{DynamicResource ZephyrTextPrimary}"/>
+            <RadioButton x:Name="CaseLower" Content="lowercase" GroupName="Case"
+                         Margin="0,0,14,0" VerticalAlignment="Center" Checked="Pattern_Changed"
+                         Foreground="{DynamicResource ZephyrTextPrimary}"/>
+            <RadioButton x:Name="CaseUpper" Content="UPPERCASE" GroupName="Case"
+                         Margin="0,0,14,0" VerticalAlignment="Center" Checked="Pattern_Changed"
+                         Foreground="{DynamicResource ZephyrTextPrimary}"/>
+            <RadioButton x:Name="CaseTitle" Content="Title Case" GroupName="Case"
+                         VerticalAlignment="Center" Checked="Pattern_Changed"
+                         Foreground="{DynamicResource ZephyrTextPrimary}"/>
+        </StackPanel>
+
+        <!-- Preview list -->
+        <Grid Grid.Row="6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="6"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="Preview"
+                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                       FontSize="11" FontWeight="SemiBold"/>
+            <ListView Grid.Row="2" x:Name="PreviewList"
+                      BorderThickness="1" BorderBrush="{DynamicResource ZephyrBorder}"
+                      Background="{DynamicResource ZephyrElevated}"
+                      Foreground="{DynamicResource ZephyrTextPrimary}"
+                      FontSize="12">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Original" Width="260" DisplayMemberBinding="{Binding Original}"/>
+                        <GridViewColumn Header="New Name" Width="260" DisplayMemberBinding="{Binding NewName}"/>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Grid>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click"/>
+            <Button Content="Rename" Width="80" IsDefault="True" Click="Rename_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

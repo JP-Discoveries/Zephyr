@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Zephyr.Core/Zephyr.Core.csproj" />
+  <Project Path="Zephyr.Tests/Zephyr.Tests.csproj" />
+  <Project Path="Zephyr.UI/Zephyr.UI.csproj" />
+</Solution>

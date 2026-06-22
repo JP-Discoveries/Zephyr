@@ -1,0 +1,176 @@
+<UserControl x:Class="Zephyr.UI.Controls.PreviewPane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:services="clr-namespace:Zephyr.UI.Services"
+             xmlns:converters="clr-namespace:Zephyr.UI.Converters">
+    <UserControl.Resources>
+        <converters:PathToImageConverter x:Key="PathToImage"/>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource ZephyrSurface}"
+            BorderBrush="{DynamicResource ZephyrBorder}"
+            BorderThickness="1,0,0,0">
+        <Grid>
+
+            <!-- No selection -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding PreviewType}" Value="{x:Static services:PreviewType.None}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8A5;" FontSize="40"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,8"/>
+                <TextBlock Text="Select a file to preview"
+                           Foreground="{DynamicResource ZephyrTextSecondary}" FontSize="13"
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- File selected: header + content -->
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Visible"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding PreviewType}" Value="{x:Static services:PreviewType.None}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header: icon + name + type -->
+                <Border Grid.Row="0" Padding="12,10"
+                        BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="0,0,0,1">
+                    <StackPanel>
+                        <TextBlock Text="{Binding SelectedItem.Name}"
+                                   FontWeight="SemiBold" FontSize="14"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                        <TextBlock Text="{Binding SelectedItem.TypeDisplay}" FontSize="12"
+                                   Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Content area -->
+                <Grid Grid.Row="1">
+
+                    <!-- Image preview -->
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer.Style>
+                            <Style TargetType="ScrollViewer">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PreviewType}" Value="{x:Static services:PreviewType.Image}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ScrollViewer.Style>
+                        <Image Source="{Binding PreviewImagePath, Converter={StaticResource PathToImage}}"
+                               Stretch="Uniform" Margin="8"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                    </ScrollViewer>
+
+                    <!-- Text preview -->
+                    <Grid>
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PreviewType}" Value="{x:Static services:PreviewType.Text}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <ProgressBar IsIndeterminate="True" Height="2" VerticalAlignment="Top"
+                                     Foreground="{DynamicResource ZephyrAccent}" BorderThickness="0"
+                                     Visibility="{Binding IsLoadingPreview, Converter={StaticResource BoolToVis}}"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Auto">
+                            <TextBox Text="{Binding PreviewText, Mode=OneWay}"
+                                     IsReadOnly="True"
+                                     FontFamily="Consolas,Courier New" FontSize="12"
+                                     Background="Transparent" BorderThickness="0"
+                                     TextWrapping="NoWrap"
+                                     Padding="12,8"
+                                     Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <!-- File info panel -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer.Style>
+                            <Style TargetType="ScrollViewer">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PreviewType}" Value="{x:Static services:PreviewType.Info}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ScrollViewer.Style>
+                        <StackPanel Margin="12,10">
+                            <!-- Icon -->
+                            <TextBlock FontFamily="Segoe Fluent Icons"
+                                       Text="{Binding SelectedItem.Icon}"
+                                       FontSize="56" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource ZephyrAccent}"
+                                       Margin="0,0,0,16"/>
+
+                            <!-- Metadata rows -->
+                            <ItemsControl>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Key}"
+                                                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                                                       FontSize="12"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Value}"
+                                                       Foreground="{DynamicResource ZephyrTextPrimary}"
+                                                       FontSize="12" TextWrapping="Wrap"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Text="Size" Foreground="{DynamicResource ZephyrTextSecondary}" FontSize="12" Margin="0,4,0,0"/>
+                            <TextBlock Text="{Binding SelectedItem.SizeDisplay}" Foreground="{DynamicResource ZephyrTextPrimary}" FontSize="12"/>
+
+                            <TextBlock Text="Modified" Foreground="{DynamicResource ZephyrTextSecondary}" FontSize="12" Margin="0,8,0,0"/>
+                            <TextBlock Text="{Binding SelectedItem.LastModified, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}" FontSize="12"/>
+
+                            <TextBlock Text="Created" Foreground="{DynamicResource ZephyrTextSecondary}" FontSize="12" Margin="0,8,0,0"/>
+                            <TextBlock Text="{Binding SelectedItem.Created, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}" FontSize="12"/>
+
+                            <TextBlock Text="Location" Foreground="{DynamicResource ZephyrTextSecondary}" FontSize="12" Margin="0,8,0,0"/>
+                            <TextBlock Text="{Binding SelectedItem.FullPath}"
+                                       Foreground="{DynamicResource ZephyrTextPrimary}" FontSize="12"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                </Grid>
+            </Grid>
+
+        </Grid>
+    </Border>
+</UserControl>

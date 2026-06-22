@@ -1,0 +1,566 @@
+<Window x:Class="Zephyr.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Zephyr.UI.Controls"
+        Title="Zephyr" Height="720" Width="1280"
+        MinHeight="500" MinWidth="700"
+        Icon="{StaticResource ZephyrAppIcon}"
+        Background="{DynamicResource ZephyrBackground}"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded">
+
+    <Window.InputBindings>
+        <KeyBinding Key="N" Modifiers="Ctrl+Shift" Command="{Binding NewFolderCommand}"/>
+        <KeyBinding Key="T" Modifiers="Ctrl"       Command="{Binding ActivePane.NewTabCommand}"/>
+        <KeyBinding Key="Z" Modifiers="Ctrl"       Command="{Binding UndoCommand}"/>
+        <KeyBinding Key="C" Modifiers="Ctrl"       Command="{Binding CopyCommand}"/>
+        <KeyBinding Key="X" Modifiers="Ctrl"       Command="{Binding CutCommand}"/>
+        <KeyBinding Key="V" Modifiers="Ctrl"       Command="{Binding PasteCommand}"/>
+        <KeyBinding Key="F2"                        Command="{Binding RenameCommand}"/>
+        <KeyBinding Key="Delete"                    Command="{Binding DeleteCommand}"/>
+        <KeyBinding Key="Delete"  Modifiers="Shift" Command="{Binding PermanentDeleteCommand}"/>
+        <KeyBinding Key="OemTilde"  Modifiers="Ctrl" Command="{Binding OpenTerminalCommand}"/>
+        <KeyBinding Key="OemComma"  Modifiers="Ctrl" Command="{Binding OpenSettingsCommand}"/>
+        <KeyBinding Key="Escape"                    Command="{Binding ClearClipboardCommand}"/>
+        <KeyBinding Key="B"         Modifiers="Ctrl" Command="{Binding ToggleSidebarCommand}"/>
+        <KeyBinding Key="P"         Modifiers="Ctrl" Command="{Binding OpenCommandPaletteCommand}"/>
+        <KeyBinding Key="P"         Modifiers="Ctrl+Shift" Command="{Binding OpenCommandPaletteCommand}"/>
+    </Window.InputBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource ZephyrSurface}"
+                BorderBrush="{DynamicResource ZephyrBorder}"
+                BorderThickness="0,0,0,1" Padding="6,4">
+            <StackPanel Orientation="Horizontal" Height="34" VerticalAlignment="Center">
+                <Button Padding="10,5" Margin="1,0" ToolTip="Toggle sidebar (Ctrl+B)"
+                        Command="{Binding ToggleSidebarCommand}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSidebarVisible}" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource ZephyrAccent}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE700;" FontSize="14"/>
+                </Button>
+                <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Toggle split view"
+                        Command="{Binding ToggleSplitViewCommand}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSplitView}" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource ZephyrAccent}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE81E;" FontSize="14"/>
+                </Button>
+                <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
+                <Button Padding="10,5" Margin="1,0" ToolTip="New Folder (Ctrl+Shift+N)"
+                        Command="{Binding NewFolderCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8F4;" FontSize="13"
+                                   Margin="0,0,5,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="New Folder" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Copy (Ctrl+C)"
+                        Command="{Binding CopyCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8C8;" FontSize="14"/>
+                </Button>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Cut (Ctrl+X)"
+                        Command="{Binding CutCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8C6;" FontSize="14"/>
+                </Button>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Paste (Ctrl+V)"
+                        Command="{Binding PasteCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE77F;" FontSize="14"/>
+                </Button>
+                <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Rename (F2)"
+                        Command="{Binding RenameCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8AC;" FontSize="14"/>
+                </Button>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Delete (Delete)"
+                        Command="{Binding DeleteCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE74D;" FontSize="14"/>
+                </Button>
+                <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Open Terminal (Ctrl+`)"
+                        Command="{Binding OpenTerminalCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE756;" FontSize="14"/>
+                </Button>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Compress… (choose format &amp; compression)"
+                        Command="{Binding CreateZipCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE9F5;" FontSize="14"/>
+                </Button>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Extract archive(s)…"
+                        Command="{Binding ExtractZipCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xED0E;" FontSize="14"/>
+                </Button>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Batch Rename"
+                        Command="{Binding BatchRenameCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8D3;" FontSize="14"/>
+                </Button>
+                <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Settings (Ctrl+,)"
+                        Command="{Binding OpenSettingsCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE713;" FontSize="14"/>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- Content -->
+        <Grid Grid.Row="1" x:Name="ContentGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="175" MinWidth="120"/>
+                <ColumnDefinition Width="4"/>
+                <ColumnDefinition Width="*" MinWidth="200"/>
+                <ColumnDefinition Width="{Binding IsSplitView, Converter={StaticResource BoolToGridLength}, ConverterParameter=4}"/>
+                <ColumnDefinition Width="{Binding IsSplitView, Converter={StaticResource BoolToGridLength}, ConverterParameter=*}"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Sidebar -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource ZephyrSurface}"
+                    BorderBrush="{DynamicResource ZephyrBorder}"
+                    BorderThickness="0,0,1,0"
+                    Visibility="{Binding IsSidebarVisible, Converter={StaticResource BoolToVis}}">
+                <ScrollViewer x:Name="SidebarScrollViewer"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+
+                        <!-- ── Bookmarks ──────────────────────────────────── -->
+                        <DockPanel Margin="12,10,8,2">
+                            <Button DockPanel.Dock="Right"
+                                    Width="20" Height="20" Padding="0"
+                                    Command="{Binding ToggleBookmarksCollapsedCommand}"
+                                    ToolTip="Expand / collapse bookmarks">
+                                <TextBlock FontFamily="Segoe Fluent Icons"
+                                           Text="{Binding BookmarksChevronIcon}"
+                                           FontSize="9" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                            </Button>
+                            <TextBlock Text="BOOKMARKS"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                                       FontSize="10" FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+
+                        <ListView x:Name="BookmarksListView"
+                                  ItemsSource="{Binding Bookmarks}"
+                                  BorderThickness="0" Background="Transparent"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                  AllowDrop="True"
+                                  Visibility="{Binding BookmarksCollapsed, Converter={StaticResource InverseBoolToVis}}"
+                                  PreviewMouseLeftButtonDown="BookmarkList_DragInit"
+                                  MouseMove="BookmarkList_DragMove"
+                                  DragOver="BookmarkList_DragOver"
+                                  Drop="BookmarkList_Drop"
+                                  PreviewMouseWheel="SidebarListView_PreviewMouseWheel">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="2,1">
+                                        <Image Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="HighQuality"
+                                               Source="{Binding Path, Converter={StaticResource PathShellIconConverter}, ConverterParameter=folder}"/>
+                                        <TextBlock Text="{Binding Name}"
+                                                   Foreground="{DynamicResource ZephyrTextPrimary}"
+                                                   FontSize="13" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Setter Property="Padding" Value="8,5"/>
+                                    <EventSetter Event="MouseLeftButtonUp" Handler="Bookmark_Click"/>
+                                    <EventSetter Event="MouseRightButtonUp" Handler="Bookmark_RightClick"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+
+                        <!-- ── Recent Files ──────────────────────────────── -->
+                        <DockPanel Margin="12,10,8,2"
+                                   Visibility="{Binding HasRecentFiles, Converter={StaticResource BoolToVis}}">
+                            <Button DockPanel.Dock="Right"
+                                    Width="20" Height="20" Padding="0"
+                                    Command="{Binding ToggleRecentFilesCollapsedCommand}"
+                                    ToolTip="Expand / collapse recent files">
+                                <TextBlock FontFamily="Segoe Fluent Icons"
+                                           Text="{Binding RecentFilesChevronIcon}"
+                                           FontSize="9" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                            </Button>
+                            <TextBlock Text="RECENT FILES"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                                       FontSize="10" FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+
+                        <ListView ItemsSource="{Binding RecentFiles}"
+                                  BorderThickness="0" Background="Transparent"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                  Visibility="{Binding HasRecentFiles, Converter={StaticResource BoolToVis}}"
+                                  PreviewMouseWheel="SidebarListView_PreviewMouseWheel">
+                            <ListView.Style>
+                                <Style TargetType="ListView" BasedOn="{StaticResource {x:Type ListView}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding RecentFilesCollapsed}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.Style>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="2,1">
+                                        <Image Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="HighQuality"
+                                               Source="{Binding FullPath, Converter={StaticResource PathShellIconConverter}}"/>
+                                        <TextBlock Text="{Binding Name}"
+                                                   Foreground="{DynamicResource ZephyrTextPrimary}"
+                                                   FontSize="12" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding FullPath}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Setter Property="Padding" Value="8,4"/>
+                                    <EventSetter Event="MouseLeftButtonUp" Handler="RecentFile_Click"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+
+                        <!-- ── Recent ─────────────────────────────────────── -->
+                        <TextBlock Text="RECENT"
+                                   Foreground="{DynamicResource ZephyrTextSecondary}"
+                                   FontSize="10" FontWeight="SemiBold"
+                                   Margin="12,10,8,4"
+                                   Visibility="{Binding History.RecentPaths.Count, Converter={StaticResource BoolToVis}}"/>
+                        <ListView ItemsSource="{Binding History.RecentPaths}"
+                                  BorderThickness="0" Background="Transparent"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                  Visibility="{Binding History.RecentPaths.Count, Converter={StaticResource BoolToVis}}"
+                                  PreviewMouseWheel="SidebarListView_PreviewMouseWheel">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}"
+                                               Foreground="{DynamicResource ZephyrTextPrimary}"
+                                               FontSize="12"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding}"/>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Setter Property="Padding" Value="8,4"/>
+                                    <EventSetter Event="MouseLeftButtonUp" Handler="Recent_Click"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+
+                        <!-- ── Drives ─────────────────────────────────────── -->
+                        <DockPanel Margin="12,10,8,2">
+                            <Button DockPanel.Dock="Right"
+                                    Width="20" Height="20" Padding="0"
+                                    Command="{Binding ToggleDrivesCollapsedCommand}"
+                                    ToolTip="Expand / collapse drives">
+                                <TextBlock FontFamily="Segoe Fluent Icons"
+                                           Text="{Binding DrivesChevronIcon}"
+                                           FontSize="9" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                            </Button>
+                            <TextBlock Text="DRIVES"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                                       FontSize="10" FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       Cursor="Hand"
+                                       MouseLeftButtonUp="DrivesHeader_Click"
+                                       ToolTip="Open This PC"/>
+                        </DockPanel>
+
+                        <ListView ItemsSource="{Binding Drives}"
+                                  BorderThickness="0" Background="Transparent"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                  Visibility="{Binding DrivesCollapsed, Converter={StaticResource InverseBoolToVis}}"
+                                  PreviewMouseWheel="SidebarListView_PreviewMouseWheel">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="2,1">
+                                        <Image Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="HighQuality"
+                                               Source="{Binding Letter, Converter={StaticResource PathShellIconConverter}, ConverterParameter=folder}"/>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       Foreground="{DynamicResource ZephyrTextPrimary}"
+                                                       FontSize="13"/>
+                                            <TextBlock Foreground="{DynamicResource ZephyrTextSecondary}"
+                                                       FontSize="11">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}{0} free">
+                                                        <Binding Path="FreeSpaceDisplay"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Setter Property="Padding" Value="8,6"/>
+                                    <EventSetter Event="MouseLeftButtonUp" Handler="Drive_Click"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+
+                        <!-- ── Devices ────────────────────────────────────── -->
+                        <DockPanel Margin="12,10,8,2"
+                                   Visibility="{Binding HasDevices, Converter={StaticResource BoolToVis}}">
+                            <Button DockPanel.Dock="Right"
+                                    Width="20" Height="20" Padding="0"
+                                    Command="{Binding ToggleDevicesCollapsedCommand}"
+                                    ToolTip="Expand / collapse devices">
+                                <TextBlock FontFamily="Segoe Fluent Icons"
+                                           Text="{Binding DevicesChevronIcon}"
+                                           FontSize="9" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                            </Button>
+                            <TextBlock Text="DEVICES"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                                       FontSize="10" FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+
+                        <ListView ItemsSource="{Binding Devices}"
+                                  BorderThickness="0" Background="Transparent"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                  PreviewMouseWheel="SidebarListView_PreviewMouseWheel">
+                            <ListView.Style>
+                                <Style TargetType="ListView" BasedOn="{StaticResource {x:Type ListView}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasDevices}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding DevicesCollapsed}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.Style>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="2,1">
+                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8EA;"
+                                                   FontSize="16" Width="20" Height="20"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                   Foreground="{DynamicResource ZephyrTextSecondary}"
+                                                   Margin="0,0,8,0"/>
+                                        <TextBlock Text="{Binding Label}"
+                                                   Foreground="{DynamicResource ZephyrTextPrimary}"
+                                                   FontSize="13" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Setter Property="Padding" Value="8,6"/>
+                                    <EventSetter Event="MouseLeftButtonUp" Handler="Device_Click"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch"
+                          Visibility="{Binding IsSidebarVisible, Converter={StaticResource BoolToVis}}"/>
+
+            <!-- Left Pane -->
+            <Border Grid.Column="2" x:Name="LeftPaneBorder" GotFocus="LeftPane_GotFocus"
+                    PreviewMouseDown="LeftPane_PreviewMouseDown">
+                <controls:FilePane DataContext="{Binding LeftPane}"/>
+            </Border>
+
+            <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch"
+                          Visibility="{Binding IsSplitView, Converter={StaticResource BoolToVis}}"/>
+
+            <!-- Right Pane (hidden until split is toggled) -->
+            <Border Grid.Column="4" x:Name="RightPaneBorder" GotFocus="RightPane_GotFocus"
+                    PreviewMouseDown="RightPane_PreviewMouseDown"
+                    Visibility="{Binding IsSplitView, Converter={StaticResource BoolToVis}}">
+                <controls:FilePane DataContext="{Binding RightPane}"/>
+            </Border>
+
+            <!-- ── Transfer panel (live copy/move progress) ─────────────────── -->
+            <Border Grid.Column="0" Grid.ColumnSpan="5"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,16,16" Width="370" MaxHeight="320"
+                    Background="{DynamicResource ZephyrSurface}"
+                    BorderBrush="{DynamicResource ZephyrBorder}"
+                    BorderThickness="1" CornerRadius="10"
+                    Visibility="{Binding Transfers.HasJobs, Converter={StaticResource BoolToVis}}">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" BlurRadius="16" ShadowDepth="2" Opacity="0.35"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <Grid Grid.Row="0" Margin="14,10,8,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="File Transfers"
+                                   Foreground="{DynamicResource ZephyrTextPrimary}"
+                                   FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Padding="8,4" ToolTip="Clear finished"
+                                Command="{Binding Transfers.ClearFinishedCommand}">
+                            <TextBlock Text="Clear" FontSize="12"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                        </Button>
+                        <Button Grid.Column="2" Padding="8,4"
+                                Command="{Binding Transfers.ToggleCollapsedCommand}"
+                                ToolTip="Collapse / expand">
+                            <TextBlock FontFamily="Segoe Fluent Icons" FontSize="11"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="&#xE70D;"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Transfers.IsPanelCollapsed}" Value="True">
+                                                <Setter Property="Text" Value="&#xE70E;"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                    </Grid>
+
+                    <!-- Job list -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                  Padding="0,0,0,6"
+                                  Visibility="{Binding Transfers.IsPanelCollapsed, Converter={StaticResource InverseBoolToVis}}">
+                        <ItemsControl ItemsSource="{Binding Transfers.Jobs}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource ZephyrElevated}"
+                                            CornerRadius="6" Margin="10,3" Padding="10,8">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Title + buttons -->
+                                            <Grid Grid.Row="0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding Title}"
+                                                           Foreground="{DynamicResource ZephyrTextPrimary}"
+                                                           FontSize="12" FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                    <Button Width="26" Height="26" Padding="0"
+                                                            Command="{Binding PauseResumeCommand}"
+                                                            ToolTip="{Binding PauseTooltip}"
+                                                            Visibility="{Binding CanControl, Converter={StaticResource BoolToVis}}">
+                                                        <TextBlock FontFamily="Segoe Fluent Icons" FontSize="13"
+                                                                   Text="{Binding PauseGlyph}"/>
+                                                    </Button>
+                                                    <Button Width="26" Height="26" Padding="0" ToolTip="Cancel"
+                                                            Command="{Binding CancelCommand}"
+                                                            Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}">
+                                                        <TextBlock FontFamily="Segoe Fluent Icons" FontSize="12"
+                                                                   Text="&#xE711;"/>
+                                                    </Button>
+                                                    <Button Width="26" Height="26" Padding="0" ToolTip="Dismiss"
+                                                            Command="{Binding DismissCommand}"
+                                                            Visibility="{Binding IsFinished, Converter={StaticResource BoolToVis}}">
+                                                        <TextBlock FontFamily="Segoe Fluent Icons" FontSize="12"
+                                                                   Text="&#xE894;"/>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <!-- Current file -->
+                                            <TextBlock Grid.Row="1" Text="{Binding CurrentFile}"
+                                                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                                                       FontSize="11" Margin="0,2,0,0"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}"/>
+
+                                            <!-- Progress bar -->
+                                            <ProgressBar Grid.Row="2" Margin="0,6,0,0"
+                                                         Style="{StaticResource ZephyrProgressBar}"
+                                                         Value="{Binding Percent, Mode=OneWay}"/>
+
+                                            <!-- Detail / status -->
+                                            <TextBlock Grid.Row="3" Text="{Binding DetailText}"
+                                                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                                                       FontSize="11" Margin="0,5,0,0"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource ZephyrSurface}"
+                BorderBrush="{DynamicResource ZephyrBorder}"
+                BorderThickness="0,1,0,0" Padding="12,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}"
+                           Foreground="{DynamicResource ZephyrTextSecondary}"
+                           VerticalAlignment="Center" FontSize="12"/>
+                <TextBlock Grid.Column="1" Text="{Binding ActivePane.FreeSpaceText}"
+                           Foreground="{DynamicResource ZephyrTextSecondary}"
+                           VerticalAlignment="Center" FontSize="12"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

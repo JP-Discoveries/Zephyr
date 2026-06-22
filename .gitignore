@@ -1,0 +1,24 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.suo
+*.userprefs
+
+# Claude Code local config (machine-specific paths)
+.claude/
+
+# Windows shell artifacts
+*.lnk
+desktop.ini
+Thumbs.db
+ehthumbs.db
+
+# OS / misc
+*.log

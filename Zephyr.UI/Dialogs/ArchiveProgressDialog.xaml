@@ -1,0 +1,44 @@
+<Window x:Class="Zephyr.UI.Dialogs.ArchiveProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Working…" Height="Auto" Width="460"
+        Icon="{StaticResource ZephyrAppIcon}"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize" SizeToContent="Height"
+        ShowInTaskbar="False"
+        Background="{DynamicResource ZephyrBackground}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Title -->
+            <RowDefinition Height="6"/>
+            <RowDefinition Height="Auto"/>  <!-- Current file -->
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>  <!-- Progress bar -->
+            <RowDefinition Height="8"/>
+            <RowDefinition Height="Auto"/>  <!-- Stats / ETA -->
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>  <!-- Cancel -->
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" x:Name="TitleText"
+                   Foreground="{DynamicResource ZephyrTextPrimary}"
+                   FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+
+        <TextBlock Grid.Row="2" x:Name="FileText" Text=""
+                   Foreground="{DynamicResource ZephyrTextSecondary}"
+                   FontSize="12" TextTrimming="CharacterEllipsis"/>
+
+        <ProgressBar Grid.Row="4" x:Name="Bar" Height="10" Minimum="0" Maximum="100"
+                     IsIndeterminate="True"
+                     Background="{DynamicResource ZephyrElevated}"
+                     BorderBrush="{DynamicResource ZephyrBorder}"
+                     Foreground="{DynamicResource ZephyrAccent}"/>
+
+        <TextBlock Grid.Row="6" x:Name="StatsText" Text=""
+                   Foreground="{DynamicResource ZephyrTextSecondary}"
+                   FontSize="11"/>
+
+        <Button Grid.Row="8" x:Name="CancelButton" Content="Cancel"
+                Width="90" HorizontalAlignment="Right" Click="Cancel_Click"/>
+    </Grid>
+</Window>

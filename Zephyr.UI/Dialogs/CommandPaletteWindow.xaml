@@ -1,0 +1,87 @@
+<Window x:Class="Zephyr.UI.Dialogs.CommandPaletteWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="620" Height="440"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" ResizeMode="NoResize"
+        WindowStartupLocation="Manual">
+    <Border Background="{DynamicResource ZephyrSurface}"
+            BorderBrush="{DynamicResource ZephyrBorder}"
+            BorderThickness="1" CornerRadius="12">
+        <Border.Effect>
+            <DropShadowEffect Color="#000000" BlurRadius="24" ShadowDepth="3" Opacity="0.45"/>
+        </Border.Effect>
+        <Grid Margin="6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Search box -->
+            <Border Grid.Row="0" Background="{DynamicResource ZephyrElevated}"
+                    BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="1"
+                    CornerRadius="8" Padding="12,0" Margin="6,6,6,4">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons" Text="&#xE721;"
+                               FontSize="15" VerticalAlignment="Center" Margin="0,0,10,0"
+                               Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                    <Grid Grid.Column="1">
+                        <TextBlock x:Name="Placeholder" Text="Type a command or path…"
+                                   FontSize="15" VerticalAlignment="Center"
+                                   IsHitTestVisible="False"
+                                   Foreground="{DynamicResource ZephyrTextDisabled}"/>
+                        <TextBox x:Name="SearchBox" Height="42" FontSize="15"
+                                 BorderThickness="0" Background="Transparent"
+                                 Foreground="{DynamicResource ZephyrTextPrimary}"
+                                 CaretBrush="{DynamicResource ZephyrTextPrimary}"
+                                 VerticalContentAlignment="Center"
+                                 TextChanged="SearchBox_TextChanged"
+                                 PreviewKeyDown="SearchBox_PreviewKeyDown"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Results -->
+            <ListBox x:Name="ResultsList" Grid.Row="1"
+                     Background="Transparent" BorderThickness="0"
+                     Margin="2,2,2,4"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     HorizontalContentAlignment="Stretch"
+                     MouseDoubleClick="ResultsList_MouseDoubleClick"
+                     PreviewMouseLeftButtonUp="ResultsList_Click">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="6,7">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons"
+                                       Text="{Binding Glyph}" FontSize="16" Width="24"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0,8,0">
+                                <TextBlock Text="{Binding Title}" FontSize="13"
+                                           Foreground="{DynamicResource ZephyrTextPrimary}"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Subtitle}" FontSize="11"
+                                           Foreground="{DynamicResource ZephyrTextSecondary}"
+                                           TextTrimming="CharacterEllipsis"
+                                           Visibility="{Binding HasSubtitle, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding Gesture}" FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                                       Visibility="{Binding HasGesture, Converter={StaticResource BoolToVis}}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+    </Border>
+</Window>
