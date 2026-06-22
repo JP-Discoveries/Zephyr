@@ -1,6 +1,6 @@
 # Zephyr
 
-A modern file manager for Windows 11, built with C# and WPF on .NET 10. Zephyr pairs a clean, fully theme-matched interface with a fast, tabbed browsing experience.
+Zephyr is a fast, keyboard-friendly file manager for Windows 11 — with tabs, split-pane browsing, built-in archive support, and folder locking, all wrapped in a clean, theme-matched interface that actually feels like part of the OS.
 
 <p align="center">
   <img src="ZephyrLook.png" alt="The Zephyr file manager window with its dark theme" width="850">
@@ -28,9 +28,13 @@ A modern file manager for Windows 11, built with C# and WPF on .NET 10. Zephyr p
 - Archives: [SharpCompress](https://github.com/adamhathcock/sharpcompress) (read) + [SharpZipLib](https://github.com/icsharpcode/SharpZipLib) (encrypted-zip write)
 - PDF rendering: [PdfPig](https://github.com/UglyToad/PdfPig)
 
-## Building
+## Requirements
 
-Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download) on Windows 11.
+- **Windows 11** (build 22621 / 22H2 or later)
+- **To run:** nothing extra — release builds are self-contained and bundle the .NET runtime
+- **To build from source:** the [.NET 10 SDK](https://dotnet.microsoft.com/download)
+
+## Building
 
 ```sh
 dotnet build -c Release
