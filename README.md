@@ -50,8 +50,10 @@ Zephyr is a fast, keyboard-friendly file manager for Windows 11 — with tabs, s
 
 - **C# / WPF** on **.NET 10** (`net10.0-windows10.0.22621.0`)
 - MVVM via [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet)
-- Archives: [SharpCompress](https://github.com/adamhathcock/sharpcompress) (read) + [SharpZipLib](https://github.com/icsharpcode/SharpZipLib) (encrypted-zip write)
+- Archives: built-in `System.IO.Compression` (plain-zip write), [SharpCompress](https://github.com/adamhathcock/sharpcompress) (read), and [SharpZipLib](https://github.com/icsharpcode/SharpZipLib) (encrypted-zip write)
 - PDF rendering: [PdfPig](https://github.com/UglyToad/PdfPig)
+- Drive and device info via [System.Management](https://www.nuget.org/packages/System.Management)
+- Tests: [xUnit](https://xunit.net/)
 
 ## Requirements
 
@@ -62,7 +64,13 @@ Zephyr is a fast, keyboard-friendly file manager for Windows 11 — with tabs, s
 ## Building
 
 ```sh
-dotnet build -c Release
+dotnet build Zephyr.slnx -c Release
+```
+
+Run the tests with:
+
+```sh
+dotnet test Zephyr.slnx
 ```
 
 ## Running
@@ -71,7 +79,10 @@ dotnet build -c Release
 dotnet run --project Zephyr.UI/Zephyr.UI.csproj
 ```
 
-Or launch the built executable without a console window via `run.vbs` (it resolves the path relative to itself, so it works from any clone location).
+Or launch the built executable directly:
+
+- **`run.vbs`** — starts Zephyr with no console window (resolves the exe path relative to itself, so it works from any clone location).
+- **`run.cmd`** — runs `dotnet run` in a console window, handy for seeing build/runtime output.
 
 ## Project layout
 
