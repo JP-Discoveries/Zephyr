@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore Zephyr.slnx
+
+      - name: Build
+        run: dotnet build Zephyr.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test Zephyr.slnx --no-build -c Release --verbosity normal
