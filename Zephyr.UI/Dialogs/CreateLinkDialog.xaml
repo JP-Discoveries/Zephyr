@@ -1,0 +1,94 @@
+<Window x:Class="Zephyr.UI.Dialogs.CreateLinkDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Create Link" Width="520" Height="Auto"
+        Icon="{StaticResource ZephyrAppIcon}"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize" SizeToContent="Height"
+        ShowInTaskbar="False"
+        Background="{DynamicResource ZephyrBackground}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Target -->
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="Auto"/> <!-- Type -->
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="Auto"/> <!-- Location -->
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/> <!-- Name -->
+            <RowDefinition Height="18"/>
+            <RowDefinition Height="Auto"/> <!-- Buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Target -->
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Link to" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,4"/>
+            <TextBlock x:Name="TargetText" FontSize="13" TextTrimming="CharacterEllipsis"
+                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+        </StackPanel>
+
+        <!-- Link type -->
+        <StackPanel Grid.Row="2">
+            <TextBlock Text="Link type" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,8"/>
+
+            <RadioButton x:Name="RbJunction" GroupName="Kind" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="Junction" FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                    <TextBlock Text="Folder link that behaves like the real folder. No admin needed."
+                               FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,2,0,0"/>
+                </StackPanel>
+            </RadioButton>
+
+            <RadioButton x:Name="RbHardlink" GroupName="Kind" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="Hard link" FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                    <TextBlock Text="Second name for the same file. Same drive only. No admin needed."
+                               FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,2,0,0"/>
+                </StackPanel>
+            </RadioButton>
+
+            <RadioButton x:Name="RbSymbolic" GroupName="Kind" Margin="0,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="Symbolic link" FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                    <TextBlock Text="Flexible pointer to the target. May need admin rights or Developer Mode."
+                               FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,2,0,0"/>
+                </StackPanel>
+            </RadioButton>
+        </StackPanel>
+
+        <!-- Location -->
+        <StackPanel Grid.Row="4">
+            <TextBlock Text="Create in" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,4"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="90"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="LocationBox" Grid.Column="0" FontSize="13" Padding="6,4"
+                         Background="{DynamicResource ZephyrElevated}"
+                         Foreground="{DynamicResource ZephyrTextPrimary}"
+                         BorderBrush="{DynamicResource ZephyrBorder}"/>
+                <Button Grid.Column="2" Content="Browse…" Click="Browse_Click"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- Name -->
+        <StackPanel Grid.Row="6">
+            <TextBlock Text="Link name" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,4"/>
+            <TextBox x:Name="NameBox" FontSize="13" Padding="6,4"
+                     Background="{DynamicResource ZephyrElevated}"
+                     Foreground="{DynamicResource ZephyrTextPrimary}"
+                     BorderBrush="{DynamicResource ZephyrBorder}"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel" Width="90" Margin="0,0,8,0" IsCancel="True" Click="Cancel_Click"/>
+            <Button Content="Create" Width="90" IsDefault="True" Click="Ok_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -143,6 +143,14 @@ public partial class TabViewModel : ObservableObject
         ? "Scope: all subfolders — click for current folder only"
         : "Scope: current folder only — click for all subfolders";
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MatchContentTooltip))]
+    private bool _matchContent;
+
+    public string MatchContentTooltip => MatchContent
+        ? "Searching file contents — click to search names"
+        : "Searching file names — click to search inside files";
+
     // ── Filters ───────────────────────────────────────────────────────────────
     [ObservableProperty] private bool           _showFilterBar;
     [ObservableProperty] private ObservableCollection<TypeFilterItem> _dynamicTypeFilterOptions = [];
@@ -500,6 +508,9 @@ public partial class TabViewModel : ObservableObject
             CustomExtensions = customExtensions,
             SizeFilter       = ActiveSizeFilter,
             DateFilter       = ActiveDateFilter,
+            MatchContent     = MatchContent,
+            IncludeHidden    = SettingsService.Current.ShowHiddenFiles,
+            IncludeSystem    = SettingsService.Current.ShowSystemFiles,
         };
 
         try
@@ -515,7 +526,8 @@ public partial class TabViewModel : ObservableObject
                     batch.Clear();
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        Items.AddRange(flush);
+                        foreach (var it in flush) it.LabelColor = FileLabelService.GetHex(it.FullPath);
+                        Items.Append(flush);
                         OnPropertyChanged(nameof(ItemCountText));
                     });
                 }
@@ -524,7 +536,8 @@ public partial class TabViewModel : ObservableObject
                     var flush = batch;
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        Items.AddRange(flush);
+                        foreach (var it in flush) it.LabelColor = FileLabelService.GetHex(it.FullPath);
+                        Items.Append(flush);
                         OnPropertyChanged(nameof(ItemCountText));
                     });
                 }
@@ -541,6 +554,9 @@ public partial class TabViewModel : ObservableObject
 
     [RelayCommand]
     private void ToggleSearchScope() => SearchRecursive = !SearchRecursive;
+
+    [RelayCommand]
+    private void ToggleContentSearch() => MatchContent = !MatchContent;
 
     [RelayCommand]
     public void ClearSearch()
@@ -707,7 +723,11 @@ public partial class TabViewModel : ObservableObject
     {
         if (_suppressFilters) return;
 
+        // Cancel both the pending debounce AND any in-flight search immediately, so a
+        // stale (now broader) query stops consuming CPU/IO the moment the text changes —
+        // otherwise it keeps scanning for the whole debounce window while backspacing.
         _debounceCts?.Cancel();
+        _searchCts?.Cancel();
         _debounceCts = new CancellationTokenSource();
         var cts = _debounceCts;
 
@@ -717,12 +737,18 @@ public partial class TabViewModel : ObservableObject
             return;
         }
 
-        // Debounce 300 ms then run the search with the current scope
-        _ = Task.Delay(300, cts.Token).ContinueWith(t =>
+        // Content search reads every file, so debounce it longer to absorb fast edits.
+        int delay = MatchContent ? 500 : 300;
+        _ = Task.Delay(delay, cts.Token).ContinueWith(t =>
         {
             if (t.IsCompletedSuccessfully)
                 Application.Current.Dispatcher.Invoke(() => _ = StartDeepSearchAsync());
         });
+    }
+
+    partial void OnMatchContentChanged(bool value)
+    {
+        if (IsSearchMode && !string.IsNullOrEmpty(SearchQuery)) _ = StartDeepSearchAsync();
     }
 
     partial void OnSelectedTypeFilterChanged(TypeFilterItem? value) { if (!_suppressFilters) ApplyFilters(); }
@@ -1073,11 +1099,14 @@ public partial class TabViewModel : ObservableObject
 
             if (ct.IsCancellationRequested) return;
             foreach (var it in items)
+            {
+                it.LabelColor = FileLabelService.GetHex(it.FullPath);
                 if (it.IsDirectory)
                 {
                     it.IsLocked   = FolderLockService.IsLockRoot(it.FullPath);
                     it.IsUnlocked = it.IsLocked && FolderLockService.IsUnlocked(it.FullPath);
                 }
+            }
             _allItems = items;
             RebuildTypeFilterOptions();
             ApplyFilters();

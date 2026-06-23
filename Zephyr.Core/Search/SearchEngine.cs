@@ -51,7 +51,7 @@ public class SearchEngine
             if (!options.IncludeHidden && isHidden) goto recurse;
             if (!options.IncludeSystem && isSystem) goto recurse;
 
-            if (Matches(entry, options))
+            if (Matches(entry, options) && await ContentMatches(entry, options, ct))
             {
                 yield return new FileItem
                 {
@@ -81,10 +81,58 @@ public class SearchEngine
         }
     }
 
+    // Files larger than this are skipped in content search to keep scans bounded.
+    private const long MaxContentBytes = 20L * 1024 * 1024;
+
+    /// <summary>In content mode, returns true if the file's text contains the query.
+    /// Folders, binary files, empty files and files over the size cap never match.
+    /// When content mode is off this is a no-op that always passes.</summary>
+    private static async Task<bool> ContentMatches(FileSystemInfo entry, SearchOptions options, CancellationToken ct)
+    {
+        if (!options.MatchContent) return true;
+        if (string.IsNullOrEmpty(options.Query)) return true;
+        if (entry is not FileInfo fi) return false;
+        if (fi.Length == 0 || fi.Length > MaxContentBytes) return false;
+
+        try
+        {
+            await using var stream = new FileStream(
+                fi.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
+                64 * 1024, FileOptions.SequentialScan | FileOptions.Asynchronous);
+
+            // Binary sniff: a NUL byte in the first 8 KB means it isn't grep-able text.
+            var head = new byte[Math.Min(8192, (int)fi.Length)];
+            int read = await stream.ReadAsync(head.AsMemory(0, head.Length), ct);
+            for (int i = 0; i < read; i++)
+                if (head[i] == 0) return false;
+            stream.Position = 0;
+
+            Regex? rx = null;
+            if (options.UseRegex)
+            {
+                try { rx = new Regex(options.Query, options.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase); }
+                catch { return false; } // invalid pattern → no content matches
+            }
+            var cmp = options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+            using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+            string? line;
+            while ((line = await reader.ReadLineAsync(ct)) is not null)
+            {
+                if (rx is not null ? rx.IsMatch(line) : line.Contains(options.Query, cmp))
+                    return true;
+            }
+        }
+        catch (OperationCanceledException) { throw; }
+        catch { return false; } // unreadable/locked file → skip
+        return false;
+    }
+
     private static bool Matches(FileSystemInfo entry, SearchOptions options)
     {
-        // Name / regex match
-        if (!string.IsNullOrEmpty(options.Query))
+        // Name / regex match — skipped in content mode, where the query is matched
+        // against file contents instead (see ContentMatches).
+        if (!options.MatchContent && !string.IsNullOrEmpty(options.Query))
         {
             bool hit;
             if (options.UseRegex)

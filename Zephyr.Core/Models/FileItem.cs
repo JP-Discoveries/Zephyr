@@ -4,6 +4,12 @@ namespace Zephyr.Core.Models;
 
 public enum ClipboardItemState { None, Cut, Copied }
 
+/// <summary>
+/// Result of comparing this item against the other pane's folder (by name) while
+/// dual-pane compare mode is on. Drives the row tint and the mirror selection.
+/// </summary>
+public enum CompareStatus { None, Unique, Identical, Newer, Older, Different }
+
 public class FileItem : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -142,6 +148,36 @@ public class FileItem : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ClipboardState)));
         }
     }
+
+    // Hex colour of the assigned label ("" = none). Set during load from FileLabelService.
+    private string _labelColor = string.Empty;
+    public string LabelColor
+    {
+        get => _labelColor;
+        set
+        {
+            if (_labelColor == value) return;
+            _labelColor = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LabelColor)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasLabel)));
+        }
+    }
+    public bool HasLabel => !string.IsNullOrEmpty(_labelColor);
+
+    // Comparison result vs. the other pane (dual-pane compare mode). Reset to None when off.
+    private CompareStatus _compareStatus;
+    public CompareStatus CompareStatus
+    {
+        get => _compareStatus;
+        set
+        {
+            if (_compareStatus == value) return;
+            _compareStatus = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CompareStatus)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasCompareStatus)));
+        }
+    }
+    public bool HasCompareStatus => _compareStatus != CompareStatus.None;
 
     private string _cloudBadge = string.Empty;
     public string CloudBadge

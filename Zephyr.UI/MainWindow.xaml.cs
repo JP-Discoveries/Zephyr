@@ -51,8 +51,24 @@ public partial class MainWindow : Window
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        ApplyHotkeys();
         if (VM is { IsSplitView: true } vm)
             ApplyPaneOpacities(vm, animate: false);
+    }
+
+    /// <summary>Rebuilds the window's key bindings from the command registry + user overrides.</summary>
+    public void ApplyHotkeys()
+    {
+        if (VM is not { } vm) return;
+        InputBindings.Clear();
+
+        // Fixed extras that aren't user-rebindable.
+        InputBindings.Add(new KeyBinding(vm.ClearClipboardCommand, Key.Escape, ModifierKeys.None));
+        InputBindings.Add(new KeyBinding(vm.OpenCommandPaletteCommand, Key.P, ModifierKeys.Control | ModifierKeys.Shift));
+
+        foreach (var cmd in vm.AppCommands)
+            if (HotkeyService.TryParse(HotkeyService.EffectiveGesture(cmd), out var key, out var mods))
+                InputBindings.Add(new KeyBinding(cmd.Command, key, mods));
     }
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -316,6 +332,39 @@ public partial class MainWindow : Window
         menu.Items.Add(miRemove);
         menu.Items.Add(sep);
         menu.Items.Add(miRename);
+        menu.PlacementTarget = (ListViewItem)sender;
+        menu.Placement       = PlacementMode.MousePoint;
+        menu.IsOpen          = true;
+        e.Handled            = true;
+    }
+
+    private void NetworkLocation_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (VM is { } vm && ((ListViewItem)sender).DataContext is NetworkLocation loc)
+            vm.ActivePane.ActiveTab?.Navigate(loc.Path);
+    }
+
+    private void NetworkLocation_RightClick(object sender, MouseButtonEventArgs e)
+    {
+        if (VM is not { } vm || ((ListViewItem)sender).DataContext is not NetworkLocation loc) return;
+
+        var menu = new ContextMenu();
+        var miOpen = new MenuItem { Header = "Open" };
+        miOpen.Click += (_, _) => vm.ActivePane.ActiveTab?.Navigate(loc.Path);
+        menu.Items.Add(miOpen);
+
+        if (loc.IsRemovable)
+        {
+            var miCopy = new MenuItem { Header = "Copy Path" };
+            miCopy.Click += (_, _) => { try { Clipboard.SetText(loc.Path); } catch { } };
+            menu.Items.Add(miCopy);
+
+            menu.Items.Add(new Separator { Style = (Style)FindResource("MenuSep") });
+            var miRemove = new MenuItem { Header = "Remove Pin" };
+            miRemove.Click += (_, _) => vm.RemoveNetworkLocation(loc);
+            menu.Items.Add(miRemove);
+        }
+
         menu.PlacementTarget = (ListViewItem)sender;
         menu.Placement       = PlacementMode.MousePoint;
         menu.IsOpen          = true;

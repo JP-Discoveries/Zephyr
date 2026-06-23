@@ -1,0 +1,43 @@
+<Window x:Class="Zephyr.UI.Dialogs.HotkeyCaptureDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Set Shortcut" Width="380" Height="Auto"
+        Icon="{StaticResource ZephyrAppIcon}"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize" SizeToContent="Height"
+        ShowInTaskbar="False"
+        Background="{DynamicResource ZephyrBackground}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="18"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="PromptText" Grid.Row="0" FontSize="13" TextWrapping="Wrap"
+                   Foreground="{DynamicResource ZephyrTextPrimary}"
+                   Text="Press the key combination you want to assign."/>
+
+        <Border Grid.Row="2" Background="{DynamicResource ZephyrElevated}"
+                BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="1"
+                CornerRadius="4" Padding="0,18" MinHeight="54">
+            <TextBlock x:Name="CaptureText" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       FontSize="18" FontWeight="SemiBold"
+                       Foreground="{DynamicResource ZephyrAccent}"
+                       Text="Press keys…"/>
+        </Border>
+
+        <TextBlock x:Name="HintText" Grid.Row="3" FontSize="11" Margin="0,6,0,0"
+                   Foreground="{DynamicResource ZephyrTextSecondary}"
+                   Text="Tip: include Ctrl, Alt or Shift. Press Backspace to clear, Esc to cancel."/>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Clear"  Width="74" Margin="0,0,8,0" Click="Clear_Click"/>
+            <Button Content="Cancel" Width="84" Margin="0,0,8,0" Click="Cancel_Click"/>
+            <Button x:Name="OkButton" Content="Assign" Width="84" IsEnabled="False" Click="Ok_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

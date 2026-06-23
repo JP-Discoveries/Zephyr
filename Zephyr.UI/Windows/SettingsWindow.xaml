@@ -33,6 +33,10 @@
                     <ListBoxItem Padding="16,10" FontSize="13"
                                  Foreground="{DynamicResource ZephyrTextPrimary}">Appearance</ListBoxItem>
                     <ListBoxItem Padding="16,10" FontSize="13"
+                                 Foreground="{DynamicResource ZephyrTextPrimary}">Shortcuts</ListBoxItem>
+                    <ListBoxItem Padding="16,10" FontSize="13"
+                                 Foreground="{DynamicResource ZephyrTextPrimary}">Toolbar</ListBoxItem>
+                    <ListBoxItem Padding="16,10" FontSize="13"
                                  Foreground="{DynamicResource ZephyrTextPrimary}">Advanced</ListBoxItem>
                 </ListBox>
             </StackPanel>
@@ -231,6 +235,91 @@
                                        FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}"/>
                         </StackPanel>
                     </RadioButton>
+                </StackPanel>
+
+                <!-- Shortcuts -->
+                <StackPanel x:Name="ShortcutsPage" Visibility="Collapsed">
+                    <TextBlock Text="Shortcuts" FontSize="20" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="Click Change and press the key combination. Combinations already in use are blocked."
+                               FontSize="11" Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,16"/>
+
+                    <ItemsControl x:Name="HotkeyList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,7">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="13"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                                    <Border Grid.Column="1" Background="{DynamicResource ZephyrElevated}"
+                                            BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="1"
+                                            CornerRadius="3" Padding="8,3" Margin="0,0,8,0">
+                                        <TextBlock Text="{Binding GestureDisplay}" FontSize="12" FontFamily="Consolas"
+                                                   HorizontalAlignment="Center"
+                                                   Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                                    </Border>
+                                    <Button Grid.Column="2" Content="Change" Padding="10,4" Margin="0,0,6,0"
+                                            Tag="{Binding}" Click="ChangeHotkey_Click"/>
+                                    <Button Grid.Column="3" Content="Reset" Padding="10,4"
+                                            Tag="{Binding}" Click="ResetHotkey_Click"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Content="Reset all to defaults" Padding="12,6" Margin="0,14,0,0"
+                            HorizontalAlignment="Left" Click="ResetAllHotkeys_Click"/>
+                </StackPanel>
+
+                <!-- Toolbar -->
+                <StackPanel x:Name="ToolbarPage" Visibility="Collapsed">
+                    <TextBlock Text="Toolbar" FontSize="20" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="Choose which action buttons appear on the toolbar and their order. (The sidebar, split and compare toggles are always shown.)"
+                               FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,0,16"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="1"
+                                CornerRadius="4" Height="260">
+                            <ListBox x:Name="ToolbarOrderList" BorderThickness="0" Background="Transparent">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="2,2">
+                                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding Glyph}"
+                                                       FontSize="14" Width="24" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                                            <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+
+                        <StackPanel Grid.Column="2" Width="150">
+                            <Button Content="Move Up"   Padding="10,6" Margin="0,0,0,6" Click="ToolbarUp_Click"/>
+                            <Button Content="Move Down" Padding="10,6" Margin="0,0,0,6" Click="ToolbarDown_Click"/>
+                            <Button Content="Remove"    Padding="10,6" Margin="0,0,0,16" Click="ToolbarRemove_Click"/>
+                            <TextBlock Text="Add button" FontSize="11" Margin="0,0,0,4"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                            <ComboBox x:Name="ToolbarAddCombo" DisplayMemberPath="Name" Margin="0,0,0,6"/>
+                            <Button Content="Add" Padding="10,6" Margin="0,0,0,16" Click="ToolbarAdd_Click"/>
+                            <Button Content="Reset" Padding="10,6" Click="ToolbarReset_Click"/>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
 
                 <!-- Advanced -->

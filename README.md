@@ -11,18 +11,24 @@ Zephyr is a fast, keyboard-friendly file manager for Windows 11 — with tabs, s
 ### Browsing & navigation
 - **Tabbed browsing** with a breadcrumb path bar and full navigation history (back / forward / up).
 - **Split / dual-pane view** for working across two locations at once.
+- **Dual-pane compare** — highlights which files are identical, unique, newer, or older between the two panes.
 - **Tear-off tabs** — drag a tab out into its own window.
 - **Details and thumbnail/icon views** with an adjustable thumbnail size.
 - **Flat view** to flatten a folder tree and see every file at once.
 - **Filter bar** for quickly narrowing the current folder.
-- **Search** across the current location, including recursive deep search.
+- **Search** across the current location — search by name or search inside file contents (grep), with regex support and recursive deep search.
 - **Session restore** reopens your tabs and panes on launch.
+- **Network locations** — pin UNC paths and mapped drives in the sidebar for quick access.
 
 ### File operations
 - **Transfer manager** — queued copy/move with live progress, plus pause, resume, and cancel.
 - **Undo** for file operations.
 - **Recycle Bin and permanent delete** (Shift+Del).
 - **Batch rename** for renaming many files at once.
+- **Batch attribute editor** — set Read-only, Hidden, System, and Archive flags and timestamps across many files at once, with optional recursion into subfolders.
+- **Create NTFS links** — symbolic links, directory junctions, and hard links.
+- **Checksum viewer** — compute MD5, SHA-1, and SHA-256 for any file in a single pass.
+- **Color labels** — tag files and folders with a color (Red, Orange, Yellow, Green, Blue, Purple, Gray) for quick visual identification.
 - **Command palette** for quick, keyboard-driven actions.
 
 ### Archives
@@ -35,16 +41,24 @@ Zephyr is a fast, keyboard-friendly file manager for Windows 11 — with tabs, s
 - **Shell integration** — native context menus and file icons.
 - **Portable device support** (MTP / WPD) for phones and cameras.
 - **Cloud sync badges** for OneDrive and other synced folders.
+- **Portable mode** — save settings next to the executable instead of `%AppData%`, useful for running from a USB drive.
+- **Launch at Windows startup** — optional auto-start when you log in.
 
 ### Display & privacy
+- **Disk usage analyzer** — scan any folder and visualize space consumption as a treemap.
 - **Folder Lock** — gate individual folders behind a password for the session.
 - **Preview pane** for images, text, and PDF documents.
 - **Thumbnails** with caching for fast, smooth scrolling.
 - **Quick Access, bookmarks, and recent files** for jumping to what you use most.
+- **Recently interacted highlight** — accent border on items you recently opened, renamed, or created; optionally sort them to the top of the file list.
 - **Show/hide hidden & system files** and **file extensions**.
 - **Optional folder sizes** in the listing.
 - **Light and dark themes** that match the rest of the Windows 11 shell.
 - **Configurable startup folder**, launch-maximized, and more.
+
+### Customization
+- **Rebindable hotkeys** — reassign any shortcut from Settings → Shortcuts.
+- **Customizable toolbar** — choose which action buttons appear and reorder them from Settings → Toolbar.
 
 ## Tech stack
 

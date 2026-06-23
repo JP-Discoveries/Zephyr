@@ -197,7 +197,13 @@ public partial class FilePane : UserControl
         // Always watch for outside clicks so we can exit edit mode.
         // Popup clicks live in a separate HwndSource and never reach this handler.
         var win = Window.GetWindow(this);
-        if (win != null) win.PreviewMouseDown += AddressBarOutsideClick;
+        if (win != null)
+        {
+            win.PreviewMouseDown += AddressBarOutsideClick;
+            // Close the popup when the user switches to another app — otherwise the
+            // topmost history popup floats over the other application.
+            win.Deactivated += AddressBarWindowDeactivated;
+        }
 
         Dispatcher.InvokeAsync(() =>
         {
@@ -223,8 +229,14 @@ public partial class FilePane : UserControl
         }
         if (Tab is { } tab) tab.IsEditingPath = false;
         var win = Window.GetWindow(this);
-        if (win != null) win.PreviewMouseDown -= AddressBarOutsideClick;
+        if (win != null)
+        {
+            win.PreviewMouseDown -= AddressBarOutsideClick;
+            win.Deactivated      -= AddressBarWindowDeactivated;
+        }
     }
+
+    private void AddressBarWindowDeactivated(object? sender, EventArgs e) => ExitAddressBar();
 
     private static bool IsDescendantOf(DependencyObject? child, DependencyObject ancestor)
     {
@@ -381,6 +393,7 @@ public partial class FilePane : UserControl
 
         var filterItems = new List<(MenuItem mi, string label)>();
         var sepList     = new List<Separator>();
+        MenuItem? labelRow = null;
 
         // ── Search bar (icon | input | clear ×) ──────────────────────────────
         var searchBar = new Border
@@ -695,9 +708,50 @@ public partial class FilePane : UserControl
             catch (Exception ex) { ShowError(ex.Message); }
         }), "create shortcut link lnk");
 
+        Add(MakeMenuItem("Create Link…", () =>
+        {
+            var dlg = new Zephyr.UI.Dialogs.CreateLinkDialog(item.FullPath)
+                { Owner = Window.GetWindow(this) };
+            if (dlg.ShowDialog() != true) return;
+            try
+            {
+                Zephyr.Core.FileSystem.LinkService.Create(dlg.SelectedKind, dlg.LinkPath, dlg.TargetPath);
+                tab.Reload();
+            }
+            catch (Exception ex)
+            {
+                ShowError(dlg.SelectedKind == Zephyr.Core.FileSystem.LinkKind.Symbolic
+                    ? $"{ex.Message}\n\nSymbolic links need administrator rights or Windows Developer Mode. " +
+                      "For folders try a Junction; for files try a Hard link instead."
+                    : ex.Message);
+            }
+        }), "create link symbolic junction hardlink hard symlink");
+
         if (!item.IsDirectory)
             Add(MakeMenuItem("Pin to Start",
                 () => ShellIntegrationService.PinToStart(item.FullPath)), "pin start menu");
+
+        if (!item.IsDirectory)
+            Add(MakeMenuItem("Checksum…", () =>
+            {
+                var win = new Zephyr.UI.Dialogs.ChecksumWindow(item.FullPath)
+                    { Owner = Window.GetWindow(this) };
+                win.ShowDialog();
+            }), "checksum hash md5 sha verify compare integrity");
+
+        if (item.IsDirectory)
+            Add(MakeMenuItem("Disk usage…", () =>
+            {
+                var win = new Zephyr.UI.Dialogs.DiskUsageWindow(item.FullPath)
+                    { Owner = Window.GetWindow(this) };
+                win.Show();
+            }), "disk usage size treemap heatmap space analyze");
+
+        // ── Colour label ──────────────────────────────────────────────────────
+        AddSep();
+        var labelTargets = tab.SelectedItems.Count > 0 ? tab.SelectedItems.ToList() : [item];
+        labelRow = BuildLabelRow(labelTargets, menu);
+        menu.Items.Add(labelRow);
 
         // ── Hide / Unhide ─────────────────────────────────────────────────────
         var hideTargets = tab.SelectedItems.Count > 0 ? tab.SelectedItems.ToList() : [item];
@@ -764,6 +818,15 @@ public partial class FilePane : UserControl
         }
 
         AddSep();
+        Add(MakeMenuItem("Attributes & Timestamps…", () =>
+        {
+            var targets = (tab.SelectedItems.Count > 0 ? tab.SelectedItems : [item])
+                .Select(i => i.FullPath).ToList();
+            var win = new Zephyr.UI.Dialogs.BatchAttributesWindow(targets)
+                { Owner = Window.GetWindow(this) };
+            if (win.ShowDialog() == true) tab.Reload();
+        }), "attributes timestamps read-only hidden system archive date modified created");
+
         Add(MakeMenuItem("Properties", () =>
         {
             var win = new Zephyr.UI.Windows.FilePropertiesWindow(item.FullPath)
@@ -784,10 +847,12 @@ public partial class FilePane : UserControl
             {
                 foreach (var (mi, _) in filterItems) mi.Visibility = Visibility.Visible;
                 foreach (var s in sepList)           s.Visibility  = Visibility.Visible;
+                if (labelRow != null) labelRow.Visibility = Visibility.Visible;
                 return;
             }
-            // Hide separators while searching so results render as a flat list
+            // Hide separators (and the colour-label row) while searching so results render flat
             foreach (var s in sepList) s.Visibility = Visibility.Collapsed;
+            if (labelRow != null) labelRow.Visibility = Visibility.Collapsed;
             foreach (var (mi, label) in filterItems)
                 mi.Visibility = label.Contains(q) ? Visibility.Visible : Visibility.Collapsed;
         };
@@ -802,6 +867,98 @@ public partial class FilePane : UserControl
         menu.PlacementTarget = anchor;
         menu.Placement       = PlacementMode.MousePoint;
         menu.IsOpen          = true;
+    }
+
+    // Builds the colour-label swatch row for the context menu: a circle per palette colour
+    // (ringed if currently applied) plus a clear (×) chip. Clicking applies/clears the label
+    // on every target (the full selection, or just the right-clicked item) and closes the menu.
+    private MenuItem BuildLabelRow(IReadOnlyList<FileItem> targets, ContextMenu menu)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(12, 5, 12, 5) };
+
+        // Show the current selection's ring only when a single item is selected.
+        string? currentKey = targets.Count == 1 ? FileLabelService.GetKey(targets[0].FullPath) : null;
+
+        foreach (var lbl in FileLabels.All)
+        {
+            var fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(lbl.Hex));
+            fill.Freeze();
+            var swatch = new Border
+            {
+                Width           = 18,
+                Height          = 18,
+                CornerRadius    = new CornerRadius(9),
+                Margin          = new Thickness(0, 0, 7, 0),
+                Background      = fill,
+                Cursor          = Cursors.Hand,
+                ToolTip         = lbl.Name,
+                BorderThickness = new Thickness(currentKey == lbl.Key ? 2 : 0),
+            };
+            swatch.SetResourceReference(Border.BorderBrushProperty, "ZephyrTextPrimary");
+            var key = lbl.Key;
+            swatch.MouseLeftButtonUp += (_, _) =>
+            {
+                foreach (var t in targets)
+                {
+                    FileLabelService.Set(t.FullPath, key);
+                    t.LabelColor = FileLabelService.GetHex(t.FullPath);
+                }
+                menu.IsOpen = false;
+            };
+            row.Children.Add(swatch);
+        }
+
+        // Clear (×) chip — removes any label from the targets.
+        var clear = new Border
+        {
+            Width           = 18,
+            Height          = 18,
+            CornerRadius    = new CornerRadius(9),
+            Margin          = new Thickness(3, 0, 0, 0),
+            Cursor          = Cursors.Hand,
+            ToolTip         = "No label",
+            BorderThickness = new Thickness(1),
+        };
+        clear.SetResourceReference(Border.BorderBrushProperty, "ZephyrBorder");
+        clear.SetResourceReference(Border.BackgroundProperty, "ZephyrElevated");
+        var x = new TextBlock
+        {
+            FontFamily          = new FontFamily("Segoe Fluent Icons"),
+            Text                = "",
+            FontSize            = 9,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment   = VerticalAlignment.Center,
+        };
+        x.SetResourceReference(TextBlock.ForegroundProperty, "ZephyrTextSecondary");
+        clear.Child = x;
+        clear.MouseLeftButtonUp += (_, _) =>
+        {
+            foreach (var t in targets)
+            {
+                FileLabelService.Set(t.FullPath, null);
+                t.LabelColor = string.Empty;
+            }
+            menu.IsOpen = false;
+        };
+        row.Children.Add(clear);
+
+        // Bare template so the row gets no MenuItem hover highlight or padding.
+        var cpFactory = new FrameworkElementFactory(typeof(ContentPresenter));
+        cpFactory.SetBinding(ContentPresenter.ContentProperty, new System.Windows.Data.Binding
+        {
+            RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.TemplatedParent),
+            Path           = new PropertyPath(MenuItem.HeaderProperty),
+        });
+        var bare = new ControlTemplate(typeof(MenuItem)) { VisualTree = cpFactory };
+
+        return new MenuItem
+        {
+            Header     = row,
+            Template   = bare,
+            Padding    = new Thickness(0),
+            Margin     = new Thickness(0),
+            Focusable  = false,
+        };
     }
 
     // Runs an archive operation off the menu, surfacing any failure to the user.
@@ -1326,6 +1483,19 @@ public partial class FilePane : UserControl
             return;
         }
 
+        // While the preview is open, arrow keys move the selection and the preview
+        // follows it live (macOS Quick Look style).
+        if (_quickPreviewVisible &&
+            e.Key is Key.Up or Key.Down or Key.Left or Key.Right &&
+            e.KeyboardDevice.Modifiers == ModifierKeys.None)
+        {
+            e.Handled = true;
+            int delta = e.Key is Key.Up or Key.Left ? -1 : +1;
+            if (MovePreviewSelection(sender as ListBox, delta) is { } next)
+                _ = ShowQuickPreviewAsync(next);
+            return;
+        }
+
 if (e.KeyboardDevice.Modifiers == ModifierKeys.None)
         {
             var c = KeyToChar(e.Key);
@@ -1335,6 +1505,22 @@ if (e.KeyboardDevice.Modifiers == ModifierKeys.None)
                 JumpToLetter(c.Value, sender as ItemsControl);
             }
         }
+    }
+
+    // Moves the active list's selection by delta (clamped) and returns the newly
+    // selected item, so the open preview can refresh to match.
+    private FileItem? MovePreviewSelection(ListBox? list, int delta)
+    {
+        var items = Tab?.Items;
+        if (list == null || items == null || items.Count == 0) return null;
+
+        int index = list.SelectedIndex < 0 ? 0 : list.SelectedIndex;
+        index = Math.Clamp(index + delta, 0, items.Count - 1);
+
+        var next = items[index];
+        list.SelectedItem = next;
+        list.ScrollIntoView(next);
+        return next;
     }
 
     private async Task ShowQuickPreviewAsync(FileItem item)

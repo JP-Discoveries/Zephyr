@@ -1,21 +1,31 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using Microsoft.Win32;
 using Zephyr.Core.Settings;
+using Zephyr.UI.Dialogs;
 using Zephyr.UI.Services;
+using Zephyr.UI.ViewModels;
 
 namespace Zephyr.UI.Windows;
 
 public partial class SettingsWindow : Window
 {
-    public SettingsWindow()
+    private readonly MainViewModel? _vm;
+    private ObservableCollection<AppCommand>? _toolbarEdit;
+
+    public SettingsWindow(MainViewModel? vm = null)
     {
         InitializeComponent();
+        _vm = vm;
         NavList.SelectedIndex = 0;
         LoadCurrentSettings();
+        if (_vm is not null) { BuildHotkeyList(); BuildToolbarEditor(); }
         SourceInitialized += (_, _) => ApplyDarkTitleBar();
     }
 
@@ -60,7 +70,137 @@ public partial class SettingsWindow : Window
         var idx = NavList.SelectedIndex;
         GeneralPage.Visibility    = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
         AppearancePage.Visibility = idx == 1 ? Visibility.Visible : Visibility.Collapsed;
-        AdvancedPage.Visibility   = idx == 2 ? Visibility.Visible : Visibility.Collapsed;
+        ShortcutsPage.Visibility  = idx == 2 ? Visibility.Visible : Visibility.Collapsed;
+        ToolbarPage.Visibility    = idx == 3 ? Visibility.Visible : Visibility.Collapsed;
+        AdvancedPage.Visibility   = idx == 4 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // ── Shortcuts (rebindable hotkeys) ──────────────────────────────────────────
+
+    private void BuildHotkeyList()
+    {
+        HotkeyList.ItemsSource = new ObservableCollection<HotkeyRow>(
+            _vm!.AppCommands.Select(c => new HotkeyRow(c)));
+    }
+
+    private void ChangeHotkey_Click(object sender, RoutedEventArgs e)
+    {
+        if (_vm is null || (sender as Button)?.Tag is not HotkeyRow row) return;
+
+        var dlg = new HotkeyCaptureDialog(row.Command.Name, row.GestureDisplay) { Owner = this };
+        if (dlg.ShowDialog() != true) return;
+
+        var gesture = dlg.Gesture; // canonical, "" = no shortcut
+        if (gesture.Length > 0)
+        {
+            var clash = _vm.AppCommands.FirstOrDefault(c =>
+                c.Id != row.Command.Id &&
+                string.Equals(HotkeyService.EffectiveGesture(c), gesture, StringComparison.OrdinalIgnoreCase));
+            if (clash is not null)
+            {
+                ZephyrMessageBox.Show(
+                    $"{HotkeyService.ToDisplay(gesture)} is already used by “{clash.Name}”.",
+                    "Shortcut in use", this);
+                return;
+            }
+        }
+
+        // Equal to the default → drop the override; otherwise store it.
+        if (string.Equals(gesture, row.Command.DefaultGesture, StringComparison.OrdinalIgnoreCase))
+            SettingsService.Current.Hotkeys.Remove(row.Command.Id);
+        else
+            SettingsService.Current.Hotkeys[row.Command.Id] = gesture;
+
+        PersistAndReapplyHotkeys();
+        row.Refresh();
+    }
+
+    private void ResetHotkey_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not HotkeyRow row) return;
+        SettingsService.Current.Hotkeys.Remove(row.Command.Id);
+        PersistAndReapplyHotkeys();
+        row.Refresh();
+    }
+
+    private void ResetAllHotkeys_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsService.Current.Hotkeys.Clear();
+        PersistAndReapplyHotkeys();
+        BuildHotkeyList();
+    }
+
+    private void PersistAndReapplyHotkeys()
+    {
+        SettingsService.Save(SettingsService.Current);
+        if (Application.Current.MainWindow is MainWindow mw) mw.ApplyHotkeys();
+    }
+
+    // ── Toolbar customization ───────────────────────────────────────────────────
+
+    private void BuildToolbarEditor()
+    {
+        _toolbarEdit = new ObservableCollection<AppCommand>(_vm!.ToolbarItems);
+        ToolbarOrderList.ItemsSource = _toolbarEdit;
+        RefreshAddCombo();
+    }
+
+    private void RefreshAddCombo()
+    {
+        if (_vm is null || _toolbarEdit is null) return;
+        ToolbarAddCombo.ItemsSource = _vm.AppCommands
+            .Where(c => c.ToolbarEligible && !_toolbarEdit.Contains(c))
+            .ToList();
+    }
+
+    private void ToolbarUp_Click(object sender, RoutedEventArgs e)
+    {
+        int i = ToolbarOrderList.SelectedIndex;
+        if (_toolbarEdit is null || i <= 0) return;
+        _toolbarEdit.Move(i, i - 1);
+        ToolbarOrderList.SelectedIndex = i - 1;
+        PersistToolbar();
+    }
+
+    private void ToolbarDown_Click(object sender, RoutedEventArgs e)
+    {
+        int i = ToolbarOrderList.SelectedIndex;
+        if (_toolbarEdit is null || i < 0 || i >= _toolbarEdit.Count - 1) return;
+        _toolbarEdit.Move(i, i + 1);
+        ToolbarOrderList.SelectedIndex = i + 1;
+        PersistToolbar();
+    }
+
+    private void ToolbarRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if (_toolbarEdit is null || ToolbarOrderList.SelectedItem is not AppCommand c) return;
+        _toolbarEdit.Remove(c);
+        PersistToolbar();
+        RefreshAddCombo();
+    }
+
+    private void ToolbarAdd_Click(object sender, RoutedEventArgs e)
+    {
+        if (_toolbarEdit is null || ToolbarAddCombo.SelectedItem is not AppCommand c) return;
+        _toolbarEdit.Add(c);
+        PersistToolbar();
+        RefreshAddCombo();
+    }
+
+    private void ToolbarReset_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsService.Current.Toolbar = [];
+        SettingsService.Save(SettingsService.Current);
+        _vm!.RebuildToolbar();
+        BuildToolbarEditor();
+    }
+
+    private void PersistToolbar()
+    {
+        if (_toolbarEdit is null) return;
+        SettingsService.Current.Toolbar = _toolbarEdit.Select(c => c.Id).ToList();
+        SettingsService.Save(SettingsService.Current);
+        _vm!.RebuildToolbar();
     }
 
     private void Browse_Click(object sender, RoutedEventArgs e)
@@ -170,4 +310,18 @@ public partial class SettingsWindow : Window
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
+}
+
+/// <summary>Row in the Shortcuts list — wraps a command and shows its current gesture.</summary>
+public sealed class HotkeyRow : INotifyPropertyChanged
+{
+    public AppCommand Command { get; }
+    public string Name => Command.Name;
+    public string GestureDisplay => HotkeyService.ToDisplay(HotkeyService.EffectiveGesture(Command));
+
+    public HotkeyRow(AppCommand command) => Command = command;
+
+    public void Refresh() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GestureDisplay)));
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }

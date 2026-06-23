@@ -59,6 +59,7 @@ public partial class App : Application
         FileItem.ShowExtensions = SettingsService.Current.ShowFileExtensions;
         FolderLockService.Load(SettingsService.Current.LockedFolders);
         RecentInteractionService.Load();
+        FileLabelService.Load();
         base.OnStartup(e);
         new ThemeService().Apply(this, SettingsService.Current.ThemeMode);
 

@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -33,20 +35,146 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool          _isSplitView    = false;
     [ObservableProperty] private bool          _isSidebarVisible = true;
 
+    /// <summary>Central command registry (toolbar + hotkeys). Built once in the constructor.</summary>
+    public List<AppCommand> AppCommands { get; } = [];
+
+    /// <summary>The commands currently shown on the customizable toolbar, in order.</summary>
+    public ObservableCollection<AppCommand> ToolbarItems { get; } = [];
+
     [RelayCommand]
     private void ToggleSplitView() => IsSplitView = !IsSplitView;
 
     [RelayCommand]
+    private void NewTab() => ActivePane.AddTab();
+
+    [RelayCommand]
     private void ToggleSidebar() => IsSidebarVisible = !IsSidebarVisible;
+
+    // ── Dual-pane compare / mirror ──────────────────────────────────────────────
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(MirrorLeftToRightCommand))]
+    [NotifyCanExecuteChangedFor(nameof(MirrorRightToLeftCommand))]
+    private bool _isCompareMode;
+
+    // The tabs whose Items collections we're currently observing for live re-comparison.
+    private TabViewModel? _cmpLeftTab;
+    private TabViewModel? _cmpRightTab;
+
+    [RelayCommand]
+    private void ToggleCompare() => IsCompareMode = !IsCompareMode;
+
+    partial void OnIsSplitViewChanged(bool value)
+    {
+        if (!value && IsCompareMode) IsCompareMode = false;
+    }
+
+    partial void OnIsCompareModeChanged(bool value)
+    {
+        if (value && !IsSplitView) IsSplitView = true;
+
+        // Always detach first, then (re)attach if turning on.
+        LeftPane.PropertyChanged  -= ComparePanePropertyChanged;
+        RightPane.PropertyChanged -= ComparePanePropertyChanged;
+        HookCompareTab(ref _cmpLeftTab,  null);
+        HookCompareTab(ref _cmpRightTab, null);
+
+        if (value)
+        {
+            LeftPane.PropertyChanged  += ComparePanePropertyChanged;
+            RightPane.PropertyChanged += ComparePanePropertyChanged;
+            HookCompareTab(ref _cmpLeftTab,  LeftPane.ActiveTab);
+            HookCompareTab(ref _cmpRightTab, RightPane.ActiveTab);
+            RecomputeCompare();
+        }
+    }
+
+    private void ComparePanePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(PaneViewModel.ActiveTab)) return;
+        HookCompareTab(ref _cmpLeftTab,  LeftPane.ActiveTab);
+        HookCompareTab(ref _cmpRightTab, RightPane.ActiveTab);
+        RecomputeCompare();
+    }
+
+    private void HookCompareTab(ref TabViewModel? slot, TabViewModel? tab)
+    {
+        if (ReferenceEquals(slot, tab)) return;
+        if (slot != null)
+        {
+            slot.Items.CollectionChanged -= CompareItemsChanged;
+            PaneComparer.Clear(slot.Items);  // drop stale tints from the tab we're leaving
+        }
+        slot = tab;
+        if (slot != null) slot.Items.CollectionChanged += CompareItemsChanged;
+    }
+
+    private void CompareItemsChanged(object? sender, NotifyCollectionChangedEventArgs e) => RecomputeCompare();
+
+    private void RecomputeCompare()
+    {
+        if (!IsCompareMode) return;
+        if (LeftPane.ActiveTab is not { } left || RightPane.ActiveTab is not { } right) return;
+        PaneComparer.Compare(left.Items, right.Items);
+    }
+
+    private bool CanMirror() =>
+        IsCompareMode && IsSplitView &&
+        LeftPane.ActiveTab is { CurrentPath: var lp } && Directory.Exists(lp) &&
+        RightPane.ActiveTab is { CurrentPath: var rp } && Directory.Exists(rp);
+
+    [RelayCommand(CanExecute = nameof(CanMirror))]
+    private Task MirrorLeftToRight() => MirrorAsync(LeftPane.ActiveTab!, RightPane.ActiveTab!);
+
+    [RelayCommand(CanExecute = nameof(CanMirror))]
+    private Task MirrorRightToLeft() => MirrorAsync(RightPane.ActiveTab!, LeftPane.ActiveTab!);
+
+    // Copies everything missing or changed on the destination side, overwriting differing files.
+    private async Task MirrorAsync(TabViewModel source, TabViewModel dest)
+    {
+        var toCopy = source.Items
+            .Where(i => i.CompareStatus is CompareStatus.Unique or CompareStatus.Newer or CompareStatus.Different)
+            .Select(i => i.FullPath)
+            .ToList();
+
+        if (toCopy.Count == 0)
+        {
+            ZephyrMessageBox.Show("Nothing to mirror — the destination already matches this folder.", "Mirror");
+            return;
+        }
+
+        if (!ZephyrMessageBox.Confirm(
+                $"Copy {toCopy.Count} new or changed item{(toCopy.Count == 1 ? "" : "s")} to:\n{dest.CurrentPath}\n\n" +
+                "Existing files with the same name will be overwritten.",
+                "Mirror", "Copy"))
+            return;
+
+        try
+        {
+            await Transfers.EnqueueAsync(TransferOperation.Copy, toCopy,
+                dest.CurrentPath, FileOperationsService.ConflictResolution.Replace);
+            dest.Reload();
+        }
+        catch (Exception ex) { ShowError(ex.Message); }
+    }
 
     public ObservableCollection<DriveItem>      Drives      { get; } = [];
     public ObservableCollection<DriveItem>      Devices     { get; } = [];
     public ObservableCollection<BookmarkItem>   Bookmarks   { get; } = [];
     public ObservableCollection<RecentFileItem> RecentFiles { get; } = [];
+    public ObservableCollection<NetworkLocation> NetworkLocations { get; } = [];
 
     public bool HasDevices => Devices.Count > 0;
 
     public bool HasRecentFiles => RecentFiles.Count > 0;
+
+    public bool HasNetworkLocations => NetworkLocations.Count > 0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NetworkChevronIcon))]
+    private bool _networkCollapsed;
+
+    public string NetworkChevronIcon => NetworkCollapsed ? "" : "";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(BookmarksChevronIcon))]
@@ -127,13 +255,68 @@ public partial class MainViewModel : ObservableObject
         DrivesCollapsed      = SettingsService.Current.DrivesCollapsed;
         DevicesCollapsed     = SettingsService.Current.DevicesCollapsed;
         RecentFilesCollapsed = SettingsService.Current.RecentFilesCollapsed;
+        NetworkCollapsed     = SettingsService.Current.NetworkCollapsed;
 
-        RecentFiles.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasRecentFiles));
-        Devices.CollectionChanged     += (_, _) => OnPropertyChanged(nameof(HasDevices));
+        RecentFiles.CollectionChanged      += (_, _) => OnPropertyChanged(nameof(HasRecentFiles));
+        Devices.CollectionChanged          += (_, _) => OnPropertyChanged(nameof(HasDevices));
+        NetworkLocations.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNetworkLocations));
 
         LoadDrives();
         LoadBookmarks();
+        LoadNetworkLocations();
         _ = LoadRecentFilesAsync();
+
+        BuildAppCommands();
+        RebuildToolbar();
+    }
+
+    // ── Command registry / customizable toolbar ─────────────────────────────────
+
+    private void BuildAppCommands()
+    {
+        void Reg(string id, string name, string glyph, IRelayCommand cmd,
+                 string gesture = "", bool toolbar = false, bool defaultOnToolbar = false) =>
+            AppCommands.Add(new AppCommand
+            {
+                Id = id, Name = name, Glyph = glyph, Command = cmd,
+                DefaultGesture = gesture, ToolbarEligible = toolbar, DefaultOnToolbar = defaultOnToolbar,
+            });
+
+        // View toggles — hotkeyable but not toolbar-customizable (they keep their fixed
+        // active-state buttons on the left of the toolbar).
+        Reg("toggle-sidebar", "Toggle Sidebar",    "", ToggleSidebarCommand,      "Ctrl+B");
+        Reg("toggle-split",   "Toggle Split View", "", ToggleSplitViewCommand);
+        Reg("toggle-compare", "Compare Panes",     "", ToggleCompareCommand);
+
+        // Toolbar-eligible actions.
+        Reg("new-folder",   "New Folder",      "", NewFolderCommand,   "Ctrl+Shift+N", toolbar: true, defaultOnToolbar: true);
+        Reg("new-tab",      "New Tab",         "", NewTabCommand,      "Ctrl+T",       toolbar: true);
+        Reg("copy",         "Copy",            "", CopyCommand,        "Ctrl+C",       toolbar: true, defaultOnToolbar: true);
+        Reg("cut",          "Cut",             "", CutCommand,         "Ctrl+X",       toolbar: true, defaultOnToolbar: true);
+        Reg("paste",        "Paste",           "", PasteCommand,       "Ctrl+V",       toolbar: true, defaultOnToolbar: true);
+        Reg("rename",       "Rename",          "", RenameCommand,      "F2",           toolbar: true, defaultOnToolbar: true);
+        Reg("delete",       "Delete",          "", DeleteCommand,      "Delete",       toolbar: true, defaultOnToolbar: true);
+        Reg("terminal",     "Open Terminal",   "", OpenTerminalCommand,"Ctrl+Oemtilde",toolbar: true, defaultOnToolbar: true);
+        Reg("compress",     "Compress…",       "", CreateZipCommand,   "",             toolbar: true, defaultOnToolbar: true);
+        Reg("extract",      "Extract Archive…","", ExtractZipCommand,  "",             toolbar: true, defaultOnToolbar: true);
+        Reg("batch-rename", "Batch Rename",    "", BatchRenameCommand, "",             toolbar: true, defaultOnToolbar: true);
+        Reg("undo",         "Undo",            "", UndoCommand,        "Ctrl+Z",       toolbar: true);
+        Reg("settings",     "Settings",        "", OpenSettingsCommand,"Ctrl+OemComma",toolbar: true, defaultOnToolbar: true);
+
+        // Hotkey-only commands.
+        Reg("delete-permanent", "Delete Permanently", "", PermanentDeleteCommand,  "Shift+Delete");
+        Reg("command-palette",  "Command Palette",    "", OpenCommandPaletteCommand, "Ctrl+P");
+    }
+
+    public void RebuildToolbar()
+    {
+        ToolbarItems.Clear();
+        var ids = SettingsService.Current.Toolbar;
+        IEnumerable<AppCommand> chosen = ids is { Count: > 0 }
+            ? ids.Select(id => AppCommands.FirstOrDefault(c => c.Id == id))
+                 .Where(c => c is { ToolbarEligible: true })!
+            : AppCommands.Where(c => c is { ToolbarEligible: true, DefaultOnToolbar: true });
+        foreach (var c in chosen) ToolbarItems.Add(c!);
     }
 
     public void SaveSession()
@@ -213,6 +396,13 @@ public partial class MainViewModel : ObservableObject
         PersistSidebarState();
     }
 
+    [RelayCommand]
+    private void ToggleNetworkCollapsed()
+    {
+        NetworkCollapsed = !NetworkCollapsed;
+        PersistSidebarState();
+    }
+
     private void PersistSidebarState()
     {
         var s = SettingsService.Current;
@@ -220,7 +410,71 @@ public partial class MainViewModel : ObservableObject
         s.DrivesCollapsed      = DrivesCollapsed;
         s.DevicesCollapsed     = DevicesCollapsed;
         s.RecentFilesCollapsed = RecentFilesCollapsed;
+        s.NetworkCollapsed     = NetworkCollapsed;
         SettingsService.Save(s);
+    }
+
+    // ── Network & cloud locations ───────────────────────────────────────────────
+
+    private const string GlyphCloud   = "";  // Cloud
+    private const string GlyphNetwork = "";  // MapDrive / network share
+
+    public void LoadNetworkLocations()
+    {
+        NetworkLocations.Clear();
+
+        // Detected cloud-sync folders (OneDrive / Dropbox / …) — auto, not removable.
+        foreach (var root in CloudSyncService.SyncRoots)
+        {
+            if (!Directory.Exists(root)) continue;
+            NetworkLocations.Add(new NetworkLocation
+            {
+                Name = Path.GetFileName(root.TrimEnd('\\', '/')) is { Length: > 0 } n ? n : root,
+                Path = root, Detail = root, Glyph = GlyphCloud, IsRemovable = false,
+            });
+        }
+
+        // Mapped network drives — auto, not removable (they come and go with the connection).
+        foreach (var d in _fs.GetDrives().Where(d => d.DriveType == DriveType.Network))
+            NetworkLocations.Add(new NetworkLocation
+            {
+                Name = d.DisplayName, Path = d.Name, Detail = d.Name,
+                Glyph = GlyphNetwork, IsRemovable = false,
+            });
+
+        // User-pinned UNC paths / folders.
+        foreach (var pin in SettingsService.Current.NetworkPins)
+            NetworkLocations.Add(new NetworkLocation
+            {
+                Name = string.IsNullOrWhiteSpace(pin.Name) ? pin.Path : pin.Name,
+                Path = pin.Path, Detail = pin.Path, Glyph = GlyphNetwork, IsRemovable = true,
+            });
+    }
+
+    [RelayCommand]
+    private void AddNetworkLocation()
+    {
+        var dlg = new AddNetworkLocationDialog { Owner = Application.Current.MainWindow };
+        if (dlg.ShowDialog() != true) return;
+
+        var path = dlg.LocationPath;
+        if (string.IsNullOrWhiteSpace(path)) return;
+        if (SettingsService.Current.NetworkPins.Any(p => p.Path.Equals(path, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        SettingsService.Current.NetworkPins.Add(new BookmarkItem { Name = dlg.LocationName, Path = path });
+        SettingsService.Save(SettingsService.Current);
+        LoadNetworkLocations();
+        ActivePane.ActiveTab?.Navigate(path);
+    }
+
+    public void RemoveNetworkLocation(NetworkLocation location)
+    {
+        if (!location.IsRemovable) return;
+        SettingsService.Current.NetworkPins.RemoveAll(p =>
+            p.Path.Equals(location.Path, StringComparison.OrdinalIgnoreCase));
+        SettingsService.Save(SettingsService.Current);
+        LoadNetworkLocations();
     }
 
     // ── Bookmarks ─────────────────────────────────────────────────────────────
@@ -641,15 +895,21 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void OpenSettings()
     {
-        var dlg = new SettingsWindow { Owner = Application.Current.MainWindow };
-        if (dlg.ShowDialog() != true) return;
+        var dlg = new SettingsWindow(this) { Owner = Application.Current.MainWindow };
+        var ok = dlg.ShowDialog() == true;
+
+        // Shortcut/toolbar edits are applied live by the dialog, so refresh regardless of OK.
+        RebuildToolbar();
+        if (Application.Current.MainWindow is MainWindow mw) mw.ApplyHotkeys();
+
+        if (!ok) return;
         new ThemeService().Apply(Application.Current, SettingsService.Current.ThemeMode);
         ReloadAllPanes();
-        if (Application.Current.MainWindow is MainWindow mw)
+        if (Application.Current.MainWindow is MainWindow mw2)
         {
-            mw.ApplyDarkTitleBar();
+            mw2.ApplyDarkTitleBar();
             if (SettingsService.Current.LaunchMaximized)
-                mw.WindowState = WindowState.Maximized;
+                mw2.WindowState = WindowState.Maximized;
         }
     }
 

@@ -40,4 +40,15 @@ public class BulkObservableCollection<T> : ObservableCollection<T>
         finally { _suppressed = false; }
         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
     }
+
+    /// <summary>
+    /// Appends items raising one Add notification per item. Unlike <see cref="AddRange"/>
+    /// (which raises a Reset) this lets the view realize only the new containers instead of
+    /// rebuilding every realized item — used for streaming appends such as live search results.
+    /// </summary>
+    public void Append(IEnumerable<T> newItems)
+    {
+        foreach (var item in newItems)
+            Add(item);
+    }
 }

@@ -18,4 +18,8 @@ public class SearchOptions
     public bool        IncludeSystem  { get; set; }
     public string      SearchRoot     { get; set; } = string.Empty;
     public string[]?   CustomExtensions { get; set; }
+
+    /// <summary>When true the query is matched against file <i>contents</i> (grep) rather
+    /// than names. Folders never match; binary and oversized files are skipped.</summary>
+    public bool        MatchContent   { get; set; }
 }

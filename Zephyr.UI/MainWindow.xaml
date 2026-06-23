@@ -9,26 +9,16 @@
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded">
 
+    <!-- Primary shortcuts are built dynamically from the command registry (see ApplyHotkeys);
+         these two are fixed extras. -->
     <Window.InputBindings>
-        <KeyBinding Key="N" Modifiers="Ctrl+Shift" Command="{Binding NewFolderCommand}"/>
-        <KeyBinding Key="T" Modifiers="Ctrl"       Command="{Binding ActivePane.NewTabCommand}"/>
-        <KeyBinding Key="Z" Modifiers="Ctrl"       Command="{Binding UndoCommand}"/>
-        <KeyBinding Key="C" Modifiers="Ctrl"       Command="{Binding CopyCommand}"/>
-        <KeyBinding Key="X" Modifiers="Ctrl"       Command="{Binding CutCommand}"/>
-        <KeyBinding Key="V" Modifiers="Ctrl"       Command="{Binding PasteCommand}"/>
-        <KeyBinding Key="F2"                        Command="{Binding RenameCommand}"/>
-        <KeyBinding Key="Delete"                    Command="{Binding DeleteCommand}"/>
-        <KeyBinding Key="Delete"  Modifiers="Shift" Command="{Binding PermanentDeleteCommand}"/>
-        <KeyBinding Key="OemTilde"  Modifiers="Ctrl" Command="{Binding OpenTerminalCommand}"/>
-        <KeyBinding Key="OemComma"  Modifiers="Ctrl" Command="{Binding OpenSettingsCommand}"/>
         <KeyBinding Key="Escape"                    Command="{Binding ClearClipboardCommand}"/>
-        <KeyBinding Key="B"         Modifiers="Ctrl" Command="{Binding ToggleSidebarCommand}"/>
-        <KeyBinding Key="P"         Modifiers="Ctrl" Command="{Binding OpenCommandPaletteCommand}"/>
-        <KeyBinding Key="P"         Modifiers="Ctrl+Shift" Command="{Binding OpenCommandPaletteCommand}"/>
+        <KeyBinding Key="P" Modifiers="Ctrl+Shift"  Command="{Binding OpenCommandPaletteCommand}"/>
     </Window.InputBindings>
 
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -67,64 +57,96 @@
                     </Button.Style>
                     <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE81E;" FontSize="14"/>
                 </Button>
-                <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
-                <Button Padding="10,5" Margin="1,0" ToolTip="New Folder (Ctrl+Shift+N)"
-                        Command="{Binding NewFolderCommand}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8F4;" FontSize="13"
-                                   Margin="0,0,5,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="New Folder" VerticalAlignment="Center"/>
-                    </StackPanel>
+                <Button Padding="10,5" Margin="1,0" ToolTip="Compare panes — highlight differences &amp; mirror"
+                        Command="{Binding ToggleCompareCommand}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCompareMode}" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource ZephyrAccent}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8AB;" FontSize="14"/>
                 </Button>
                 <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
-                <Button Padding="10,5" Margin="1,0" ToolTip="Copy (Ctrl+C)"
-                        Command="{Binding CopyCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8C8;" FontSize="14"/>
-                </Button>
-                <Button Padding="10,5" Margin="1,0" ToolTip="Cut (Ctrl+X)"
-                        Command="{Binding CutCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8C6;" FontSize="14"/>
-                </Button>
-                <Button Padding="10,5" Margin="1,0" ToolTip="Paste (Ctrl+V)"
-                        Command="{Binding PasteCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE77F;" FontSize="14"/>
-                </Button>
-                <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
-                <Button Padding="10,5" Margin="1,0" ToolTip="Rename (F2)"
-                        Command="{Binding RenameCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8AC;" FontSize="14"/>
-                </Button>
-                <Button Padding="10,5" Margin="1,0" ToolTip="Delete (Delete)"
-                        Command="{Binding DeleteCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE74D;" FontSize="14"/>
-                </Button>
-                <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
-                <Button Padding="10,5" Margin="1,0" ToolTip="Open Terminal (Ctrl+`)"
-                        Command="{Binding OpenTerminalCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE756;" FontSize="14"/>
-                </Button>
-                <Button Padding="10,5" Margin="1,0" ToolTip="Compress… (choose format &amp; compression)"
-                        Command="{Binding CreateZipCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE9F5;" FontSize="14"/>
-                </Button>
-                <Button Padding="10,5" Margin="1,0" ToolTip="Extract archive(s)…"
-                        Command="{Binding ExtractZipCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xED0E;" FontSize="14"/>
-                </Button>
-                <Button Padding="10,5" Margin="1,0" ToolTip="Batch Rename"
-                        Command="{Binding BatchRenameCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8D3;" FontSize="14"/>
-                </Button>
-                <Rectangle Width="1" Fill="{DynamicResource ZephyrBorder}" Margin="6,5"/>
-                <Button Padding="10,5" Margin="1,0" ToolTip="Settings (Ctrl+,)"
-                        Command="{Binding OpenSettingsCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE713;" FontSize="14"/>
-                </Button>
+                <!-- Customizable action buttons (configure in Settings → Toolbar) -->
+                <ItemsControl ItemsSource="{Binding ToolbarItems}" VerticalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Padding="10,5" Margin="1,0"
+                                    Command="{Binding Command}" ToolTip="{Binding Name}">
+                                <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding Glyph}" FontSize="14"/>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
         </Border>
 
+        <!-- Compare bar (visible only in dual-pane compare mode) -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource ZephyrSurface}"
+                BorderBrush="{DynamicResource ZephyrBorder}"
+                BorderThickness="0,0,0,1" Padding="12,6"
+                Visibility="{Binding IsCompareMode, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Legend -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Compare:" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ZephyrTextSecondary}"
+                               VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <Ellipse Width="9" Height="9" Fill="#16C60C" VerticalAlignment="Center"/>
+                    <TextBlock Text="Same" FontSize="12" Margin="5,0,14,0"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Center"/>
+                    <Ellipse Width="9" Height="9" Fill="#0078D7" VerticalAlignment="Center"/>
+                    <TextBlock Text="Only here" FontSize="12" Margin="5,0,14,0"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Center"/>
+                    <Ellipse Width="9" Height="9" Fill="#00B7C3" VerticalAlignment="Center"/>
+                    <TextBlock Text="Newer" FontSize="12" Margin="5,0,14,0"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Center"/>
+                    <Ellipse Width="9" Height="9" Fill="#F7630C" VerticalAlignment="Center"/>
+                    <TextBlock Text="Older" FontSize="12" Margin="5,0,14,0"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Center"/>
+                    <Ellipse Width="9" Height="9" Fill="#8764B8" VerticalAlignment="Center"/>
+                    <TextBlock Text="Differs" FontSize="12" Margin="5,0,0,0"
+                               Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Mirror actions -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Padding="10,4" Margin="2,0"
+                            Command="{Binding MirrorLeftToRightCommand}"
+                            ToolTip="Copy items that are new or changed on the left into the right folder">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Mirror " FontSize="12" VerticalAlignment="Center"/>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE72A;" FontSize="13" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Padding="10,4" Margin="2,0"
+                            Command="{Binding MirrorRightToLeftCommand}"
+                            ToolTip="Copy items that are new or changed on the right into the left folder">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE72B;" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text=" Mirror" FontSize="12" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- Content -->
-        <Grid Grid.Row="1" x:Name="ContentGrid">
+        <Grid Grid.Row="2" x:Name="ContentGrid">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="175" MinWidth="120"/>
                 <ColumnDefinition Width="4"/>
@@ -331,6 +353,60 @@
                                 <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
                                     <Setter Property="Padding" Value="8,6"/>
                                     <EventSetter Event="MouseLeftButtonUp" Handler="Drive_Click"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+
+                        <!-- ── Network ────────────────────────────────────── -->
+                        <DockPanel Margin="12,10,8,2">
+                            <Button DockPanel.Dock="Right"
+                                    Width="20" Height="20" Padding="0"
+                                    Command="{Binding ToggleNetworkCollapsedCommand}"
+                                    ToolTip="Expand / collapse network">
+                                <TextBlock FontFamily="Segoe Fluent Icons"
+                                           Text="{Binding NetworkChevronIcon}"
+                                           FontSize="9" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                            </Button>
+                            <Button DockPanel.Dock="Right"
+                                    Width="20" Height="20" Padding="0" Margin="0,0,2,0"
+                                    Command="{Binding AddNetworkLocationCommand}"
+                                    ToolTip="Add a network location…">
+                                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE710;"
+                                           FontSize="11" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                            </Button>
+                            <TextBlock Text="NETWORK"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                                       FontSize="10" FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+
+                        <ListView ItemsSource="{Binding NetworkLocations}"
+                                  BorderThickness="0" Background="Transparent"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                  Visibility="{Binding NetworkCollapsed, Converter={StaticResource InverseBoolToVis}}"
+                                  PreviewMouseWheel="SidebarListView_PreviewMouseWheel">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="2,1" ToolTip="{Binding Detail}">
+                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding Glyph}"
+                                                   FontSize="15" Width="20" VerticalAlignment="Center"
+                                                   HorizontalAlignment="Center"
+                                                   Foreground="{DynamicResource ZephyrTextSecondary}" Margin="0,0,8,0"/>
+                                        <TextBlock Text="{Binding Name}"
+                                                   Foreground="{DynamicResource ZephyrTextPrimary}"
+                                                   FontSize="13" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Setter Property="Padding" Value="8,5"/>
+                                    <EventSetter Event="MouseLeftButtonUp" Handler="NetworkLocation_Click"/>
+                                    <EventSetter Event="MouseRightButtonUp" Handler="NetworkLocation_RightClick"/>
                                 </Style>
                             </ListView.ItemContainerStyle>
                         </ListView>
@@ -545,7 +621,7 @@
         </Grid>
 
         <!-- Status Bar -->
-        <Border Grid.Row="2"
+        <Border Grid.Row="3"
                 Background="{DynamicResource ZephyrSurface}"
                 BorderBrush="{DynamicResource ZephyrBorder}"
                 BorderThickness="0,1,0,0" Padding="12,5">

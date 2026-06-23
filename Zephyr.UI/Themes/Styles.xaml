@@ -10,6 +10,8 @@
     <converters:BoolToGridLengthConverter         x:Key="BoolToGridLength"/>
     <converters:FileItemToIconConverter           x:Key="ShellIconConverter"/>
     <converters:PathToShellIconConverter          x:Key="PathShellIconConverter"/>
+    <converters:HexToBrushConverter               x:Key="HexToBrush"/>
+    <converters:CompareStatusToBrushConverter     x:Key="CompareStatusToBrush"/>
 
     <!-- ── Button ──────────────────────────────────────────────────────── -->
     <Style TargetType="Button">
