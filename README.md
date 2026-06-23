@@ -6,6 +6,10 @@ Zephyr is a fast, keyboard-friendly file manager for Windows 11 — with tabs, s
   <img src="ZephyrLook.png" alt="The Zephyr file manager window with its dark theme" width="850">
 </p>
 
+## Download
+
+Grab the latest build from the [**Releases**](https://github.com/JP-Discoveries/Zephyr/releases/latest) page — download the `win-x64` zip, unzip it anywhere, and run `Zephyr.exe`. No installer and no .NET runtime required; everything is self-contained.
+
 ## Features
 
 ### Browsing & navigation
