@@ -18,6 +18,9 @@
     <UseWPF>true</UseWPF>
 <AssemblyName>Zephyr</AssemblyName>
     <RootNamespace>Zephyr.UI</RootNamespace>
+    <!-- Precompile IL to native at publish time to cut cold-start JIT cost.
+         Only takes effect on `dotnet publish` with a RID; plain build/run is unaffected. -->
+    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
 </Project>

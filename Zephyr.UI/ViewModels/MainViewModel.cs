@@ -261,13 +261,36 @@ public partial class MainViewModel : ObservableObject
         Devices.CollectionChanged          += (_, _) => OnPropertyChanged(nameof(HasDevices));
         NetworkLocations.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNetworkLocations));
 
-        LoadDrives();
         LoadBookmarks();
-        LoadNetworkLocations();
         _ = LoadRecentFilesAsync();
+
+        // Drives, portable devices, and network locations do slow blocking I/O and COM
+        // (WPD/MTP enumeration in particular). Load them off the UI thread so the window
+        // paints immediately and the sidebar fills in a moment later.
+        _ = InitializeSidebarAsync();
 
         BuildAppCommands();
         RebuildToolbar();
+    }
+
+    /// <summary>Populates the sidebar's Drives, Devices, and Network sections without
+    /// blocking the UI thread at startup. The drive + portable-device enumeration runs
+    /// on a background thread; the collections are updated back on the UI thread.</summary>
+    private async Task InitializeSidebarAsync()
+    {
+        var (drives, devices) = await Task.Run(() =>
+        {
+            var ds = _fs.GetDrives().ToList();
+            return (ds, PortableDeviceService.GetPortableDevices(ds).ToList());
+        });
+
+        Drives.Clear();
+        foreach (var d in drives)  Drives.Add(d);
+        Devices.Clear();
+        foreach (var d in devices) Devices.Add(d);
+
+        // Network locations reuse the now-warm drive list; cheap enough to run inline.
+        LoadNetworkLocations();
     }
 
     // ── Command registry / customizable toolbar ─────────────────────────────────
@@ -1000,15 +1023,6 @@ public partial class MainViewModel : ObservableObject
     }
 
     // ── Sidebar data ──────────────────────────────────────────────────────────
-
-    private void LoadDrives()
-    {
-        var drives = _fs.GetDrives();
-        foreach (var drive in drives)
-            Drives.Add(drive);
-        foreach (var device in PortableDeviceService.GetPortableDevices(drives))
-            Devices.Add(device);
-    }
 
     private static void ShowError(string msg) =>
         ZephyrMessageBox.Show(msg, "Error");
