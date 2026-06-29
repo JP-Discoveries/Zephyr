@@ -69,7 +69,7 @@ Grab the latest build from the [**Releases**](https://github.com/JP-Discoveries/
 - **C# / WPF** on **.NET 10** (`net10.0-windows10.0.22621.0`)
 - MVVM via [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet)
 - Archives: built-in `System.IO.Compression` (plain-zip write), [SharpCompress](https://github.com/adamhathcock/sharpcompress) (read), and [SharpZipLib](https://github.com/icsharpcode/SharpZipLib) (encrypted-zip write)
-- PDF rendering: [PdfPig](https://github.com/UglyToad/PdfPig)
+- PDF preview: the built-in Windows engine (`Windows.Data.Pdf`) renders pages; [PdfPig](https://github.com/UglyToad/PdfPig) extracts text
 - Drive and device info via [System.Management](https://www.nuget.org/packages/System.Management)
 - Tests: [xUnit](https://xunit.net/)
 

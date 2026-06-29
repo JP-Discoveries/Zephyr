@@ -1533,8 +1533,31 @@ if (e.KeyboardDevice.Modifiers == ModifierKeys.None)
         QuickPreviewImageScroll.Visibility = Visibility.Collapsed;
         QuickPreviewTextScroll.Visibility  = Visibility.Collapsed;
         QuickPreviewInfo.Visibility        = Visibility.Collapsed;
+        QuickPreviewImage.Source           = null;
+        QuickPreviewPdfPages.ItemsSource   = null;
         QuickPreviewOverlay.Visibility     = Visibility.Visible;
         _quickPreviewVisible               = true;
+
+        // PDFs render to actual page images rather than scraped text.
+        if (!item.IsDirectory && string.Equals(item.Extension, ".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            QuickPreviewText.Text             = "Rendering…";
+            QuickPreviewTextScroll.Visibility = Visibility.Visible;
+            try
+            {
+                var path  = item.FullPath;
+                var pages = await PdfRenderService.RenderPagesAsync(path, ct);
+                if (ct.IsCancellationRequested) return;
+                if (pages.Count == 0) { ShowQPInfo(item); return; }
+                QuickPreviewTextScroll.Visibility  = Visibility.Collapsed;
+                QuickPreviewPdfPages.ItemsSource   = pages;
+                QuickPreviewImageScroll.Visibility = Visibility.Visible;
+                QuickPreviewImageScroll.ScrollToTop();
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { QuickPreviewText.Text = $"[Cannot render PDF: {ex.Message}]"; }
+            return;
+        }
 
         var previewType = item.IsDirectory ? PreviewType.Info : PreviewService.GetType(item.Extension);
 
@@ -1616,6 +1639,7 @@ if (e.KeyboardDevice.Modifiers == ModifierKeys.None)
         _quickPreviewVisible               = false;
         QuickPreviewOverlay.Visibility     = Visibility.Collapsed;
         QuickPreviewImage.Source           = null;
+        QuickPreviewPdfPages.ItemsSource   = null;
         QuickPreviewText.Text              = string.Empty;
     }
 

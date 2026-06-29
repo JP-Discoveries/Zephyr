@@ -837,8 +837,24 @@
                                       HorizontalScrollBarVisibility="Disabled"
                                       VerticalScrollBarVisibility="Auto"
                                       Visibility="Collapsed">
-                            <Image x:Name="QuickPreviewImage" Stretch="Uniform" Margin="12"
-                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <StackPanel>
+                                <!-- Single image (image files) -->
+                                <Image x:Name="QuickPreviewImage" Stretch="Uniform" Margin="12"
+                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                <!-- Rendered PDF pages, stacked vertically -->
+                                <ItemsControl x:Name="QuickPreviewPdfPages" Margin="12,12,12,0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,0,12"
+                                                    BorderBrush="{DynamicResource ZephyrBorder}"
+                                                    BorderThickness="1">
+                                                <Image Source="{Binding}" Stretch="Uniform"
+                                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
                         </ScrollViewer>
 
                         <!-- Text -->
