@@ -31,28 +31,28 @@ public partial class MainViewModel
 
         // View toggles — hotkeyable but not toolbar-customizable (they keep their fixed
         // active-state buttons on the left of the toolbar).
-        Reg("toggle-sidebar", "Toggle Sidebar",    "", ToggleSidebarCommand,      "Ctrl+B");
-        Reg("toggle-split",   "Toggle Split View", "", ToggleSplitViewCommand);
-        Reg("toggle-compare", "Compare Panes",     "", ToggleCompareCommand);
+        Reg("toggle-sidebar", "Toggle Sidebar",    "", ToggleSidebarCommand,      "Ctrl+B");
+        Reg("toggle-split",   "Toggle Split View", "", ToggleSplitViewCommand);
+        Reg("toggle-compare", "Compare Panes",     "", ToggleCompareCommand);
 
         // Toolbar-eligible actions.
-        Reg("new-folder",   "New Folder",      "", NewFolderCommand,   "Ctrl+Shift+N", toolbar: true, defaultOnToolbar: true);
-        Reg("new-tab",      "New Tab",         "", NewTabCommand,      "Ctrl+T",       toolbar: true);
-        Reg("copy",         "Copy",            "", CopyCommand,        "Ctrl+C",       toolbar: true, defaultOnToolbar: true);
-        Reg("cut",          "Cut",             "", CutCommand,         "Ctrl+X",       toolbar: true, defaultOnToolbar: true);
-        Reg("paste",        "Paste",           "", PasteCommand,       "Ctrl+V",       toolbar: true, defaultOnToolbar: true);
-        Reg("rename",       "Rename",          "", RenameCommand,      "F2",           toolbar: true, defaultOnToolbar: true);
-        Reg("delete",       "Delete",          "", DeleteCommand,      "Delete",       toolbar: true, defaultOnToolbar: true);
-        Reg("terminal",     "Open Terminal",   "", OpenTerminalCommand,"Ctrl+Oemtilde",toolbar: true, defaultOnToolbar: true);
-        Reg("compress",     "Compress…",       "", CreateZipCommand,   "",             toolbar: true, defaultOnToolbar: true);
-        Reg("extract",      "Extract Archive…","", ExtractZipCommand,  "",             toolbar: true, defaultOnToolbar: true);
-        Reg("batch-rename", "Batch Rename",    "", BatchRenameCommand, "",             toolbar: true, defaultOnToolbar: true);
-        Reg("undo",         "Undo",            "", UndoCommand,        "Ctrl+Z",       toolbar: true);
-        Reg("settings",     "Settings",        "", OpenSettingsCommand,"Ctrl+OemComma",toolbar: true, defaultOnToolbar: true);
+        Reg("new-folder",   "New Folder",      "", NewFolderCommand,   "Ctrl+Shift+N", toolbar: true, defaultOnToolbar: true);
+        Reg("new-tab",      "New Tab",         "", NewTabCommand,      "Ctrl+T",       toolbar: true);
+        Reg("copy",         "Copy",            "", CopyCommand,        "Ctrl+C",       toolbar: true, defaultOnToolbar: true);
+        Reg("cut",          "Cut",             "", CutCommand,         "Ctrl+X",       toolbar: true, defaultOnToolbar: true);
+        Reg("paste",        "Paste",           "", PasteCommand,       "Ctrl+V",       toolbar: true, defaultOnToolbar: true);
+        Reg("rename",       "Rename",          "", RenameCommand,      "F2",           toolbar: true, defaultOnToolbar: true);
+        Reg("delete",       "Delete",          "", DeleteCommand,      "Delete",       toolbar: true, defaultOnToolbar: true);
+        Reg("terminal",     "Open Terminal",   "", OpenTerminalCommand,"Ctrl+Oemtilde",toolbar: true, defaultOnToolbar: true);
+        Reg("compress",     "Compress…",       "", CreateZipCommand,   "",             toolbar: true, defaultOnToolbar: true);
+        Reg("extract",      "Extract Archive…","", ExtractZipCommand,  "",             toolbar: true, defaultOnToolbar: true);
+        Reg("batch-rename", "Batch Rename",    "", BatchRenameCommand, "",             toolbar: true, defaultOnToolbar: true);
+        Reg("undo",         "Undo",            "", UndoCommand,        "Ctrl+Z",       toolbar: true);
+        Reg("settings",     "Settings",        "", OpenSettingsCommand,"Ctrl+OemComma",toolbar: true, defaultOnToolbar: true);
 
         // Hotkey-only commands.
-        Reg("delete-permanent", "Delete Permanently", "", PermanentDeleteCommand,  "Shift+Delete");
-        Reg("command-palette",  "Command Palette",    "", OpenCommandPaletteCommand, "Ctrl+P");
+        Reg("delete-permanent", "Delete Permanently", "", PermanentDeleteCommand,  "Shift+Delete");
+        Reg("command-palette",  "Command Palette",    "", OpenCommandPaletteCommand, "Ctrl+P");
     }
 
     public void RebuildToolbar()
@@ -110,28 +110,28 @@ public partial class MainViewModel
 
         PaletteItem Go(string title, string path) => new()
         {
-            Title = title, Subtitle = path, Glyph = "", Category = "Go to",
+            Title = title, Subtitle = path, Glyph = "", Category = "Go to",
             Action = () => ActivePane.ActiveTab?.Navigate(path),
         };
 
         var items = new List<PaletteItem>
         {
-            Cmd("New Folder",         "", NewFolderCommand,         "Ctrl+Shift+N"),
-            Cmd("New Tab",            "", ActivePane.NewTabCommand, "Ctrl+T"),
-            Cmd("Copy",               "", CopyCommand,              "Ctrl+C"),
-            Cmd("Cut",                "", CutCommand,               "Ctrl+X"),
-            Cmd("Paste",              "", PasteCommand,             "Ctrl+V"),
-            Cmd("Rename",             "", RenameCommand,            "F2"),
-            Cmd("Delete",             "", DeleteCommand,            "Del"),
-            Cmd("Delete Permanently", "", PermanentDeleteCommand,   "Shift+Del"),
-            Cmd("Undo",               "", UndoCommand,              "Ctrl+Z"),
-            Cmd("Open Terminal",      "", OpenTerminalCommand,      "Ctrl+`"),
-            Cmd("Compress…",          "", CreateZipCommand),
-            Cmd("Extract Archive…",   "", ExtractZipCommand),
-            Cmd("Batch Rename",       "", BatchRenameCommand),
-            Cmd("Toggle Split View",  "", ToggleSplitViewCommand),
-            Cmd("Toggle Sidebar",     "", ToggleSidebarCommand,     "Ctrl+B"),
-            Cmd("Settings",           "", OpenSettingsCommand,      "Ctrl+,"),
+            Cmd("New Folder",         "", NewFolderCommand,         "Ctrl+Shift+N"),
+            Cmd("New Tab",            "", ActivePane.NewTabCommand, "Ctrl+T"),
+            Cmd("Copy",               "", CopyCommand,              "Ctrl+C"),
+            Cmd("Cut",                "", CutCommand,               "Ctrl+X"),
+            Cmd("Paste",              "", PasteCommand,             "Ctrl+V"),
+            Cmd("Rename",             "", RenameCommand,            "F2"),
+            Cmd("Delete",             "", DeleteCommand,            "Del"),
+            Cmd("Delete Permanently", "", PermanentDeleteCommand,   "Shift+Del"),
+            Cmd("Undo",               "", UndoCommand,              "Ctrl+Z"),
+            Cmd("Open Terminal",      "", OpenTerminalCommand,      "Ctrl+`"),
+            Cmd("Compress…",          "", CreateZipCommand),
+            Cmd("Extract Archive…",   "", ExtractZipCommand),
+            Cmd("Batch Rename",       "", BatchRenameCommand),
+            Cmd("Toggle Split View",  "", ToggleSplitViewCommand),
+            Cmd("Toggle Sidebar",     "", ToggleSidebarCommand,     "Ctrl+B"),
+            Cmd("Settings",           "", OpenSettingsCommand,      "Ctrl+,"),
         };
 
         // Quick "Go to" common locations.
@@ -149,13 +149,13 @@ public partial class MainViewModel
         foreach (var d in Drives)
             items.Add(new PaletteItem
             {
-                Title = d.DisplayName, Subtitle = d.Name, Glyph = "", Category = "Drive",
+                Title = d.DisplayName, Subtitle = d.Name, Glyph = "", Category = "Drive",
                 Action = () => ActivePane.ActiveTab?.Navigate(d.Name),
             });
         foreach (var p in History.RecentPaths)
             items.Add(new PaletteItem
             {
-                Title = FolderTitle(p), Subtitle = p, Glyph = "", Category = "Recent",
+                Title = FolderTitle(p), Subtitle = p, Glyph = "", Category = "Recent",
                 Action = () => ActivePane.ActiveTab?.Navigate(p),
             });
 

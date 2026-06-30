@@ -58,7 +58,7 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
         var magIcon = new TextBlock
         {
             FontFamily        = new FontFamily("Segoe Fluent Icons"),
-            Text              = "",
+            Text              = "",
             FontSize          = 13,
             Margin            = new Thickness(12, 0, 6, 0),
             VerticalAlignment = VerticalAlignment.Center,
@@ -98,7 +98,7 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
         var clearIcon = new TextBlock
         {
             FontFamily        = new FontFamily("Segoe Fluent Icons"),
-            Text              = "",
+            Text              = "",
             FontSize          = 10,
             Margin            = new Thickness(4, 0, 12, 0),
             VerticalAlignment = VerticalAlignment.Center,
@@ -567,7 +567,7 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
         var x = new TextBlock
         {
             FontFamily          = new FontFamily("Segoe Fluent Icons"),
-            Text                = "",
+            Text                = "",
             FontSize            = 9,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment   = VerticalAlignment.Center,

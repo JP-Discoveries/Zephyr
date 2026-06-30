@@ -30,7 +30,7 @@ public partial class MainViewModel
     [NotifyPropertyChangedFor(nameof(NetworkChevronIcon))]
     private bool _networkCollapsed;
 
-    public string NetworkChevronIcon => NetworkCollapsed ? "" : "";
+    public string NetworkChevronIcon => NetworkCollapsed ? "" : "";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(BookmarksChevronIcon))]
@@ -48,10 +48,10 @@ public partial class MainViewModel
     [NotifyPropertyChangedFor(nameof(RecentFilesChevronIcon))]
     private bool _recentFilesCollapsed;
 
-    public string BookmarksChevronIcon   => BookmarksCollapsed   ? "" : "";
-    public string DrivesChevronIcon      => DrivesCollapsed      ? "" : "";
-    public string DevicesChevronIcon     => DevicesCollapsed     ? "" : "";
-    public string RecentFilesChevronIcon => RecentFilesCollapsed ? "" : "";
+    public string BookmarksChevronIcon   => BookmarksCollapsed   ? "" : "";
+    public string DrivesChevronIcon      => DrivesCollapsed      ? "" : "";
+    public string DevicesChevronIcon     => DevicesCollapsed     ? "" : "";
+    public string RecentFilesChevronIcon => RecentFilesCollapsed ? "" : "";
 
     /// <summary>Populates the sidebar's Drives, Devices, and Network sections without
     /// blocking the UI thread at startup. The drive + portable-device enumeration runs
@@ -143,8 +143,8 @@ public partial class MainViewModel
 
     // ── Network & cloud locations ───────────────────────────────────────────────
 
-    private const string GlyphCloud   = "";  // Cloud
-    private const string GlyphNetwork = "";  // MapDrive / network share
+    private const string GlyphCloud   = "";  // Cloud
+    private const string GlyphNetwork = "";  // MapDrive / network share
 
     public void LoadNetworkLocations()
     {
