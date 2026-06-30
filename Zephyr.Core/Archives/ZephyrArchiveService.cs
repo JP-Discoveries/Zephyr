@@ -37,6 +37,16 @@ public static class ZephyrArchiveService
         string? Password  = null,
         bool    Overwrite = true);
 
+    /// <summary>Strips a compound (.tar.gz/.tar.bz2/.tar.xz) or single archive extension,
+    /// e.g. for naming an extraction subfolder.</summary>
+    public static string StripArchiveExtension(string name)
+    {
+        foreach (var ext in new[] { ".tar.gz", ".tar.bz2", ".tar.xz" })
+            if (name.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
+                return name[..^ext.Length];
+        return Path.GetFileNameWithoutExtension(name);
+    }
+
     /// <summary>Byte-level progress snapshot reported during compress/extract.</summary>
     public sealed record ArchiveProgress(long ProcessedBytes, long TotalBytes, string CurrentEntry)
     {

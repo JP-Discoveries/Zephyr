@@ -402,7 +402,7 @@
                     </ListView.View>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem" BasedOn="{StaticResource GridViewItemStyle}">
-                            <EventSetter Event="MouseDoubleClick" Handler="FileItem_DoubleClick"/>
+                            <EventSetter Event="MouseDoubleClick" Handler="OpenItem_DoubleClick"/>
                             <Setter Property="Background"
                                     Value="{Binding CompareStatus, Converter={StaticResource CompareStatusToBrush}, ConverterParameter=tint}"/>
                             <Style.Triggers>
@@ -481,7 +481,7 @@
                     </ListView.View>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem" BasedOn="{StaticResource GridViewItemStyle}">
-                            <EventSetter Event="MouseDoubleClick" Handler="SearchResult_DoubleClick"/>
+                            <EventSetter Event="MouseDoubleClick" Handler="OpenItem_DoubleClick"/>
                             <Setter Property="Background"
                                     Value="{Binding CompareStatus, Converter={StaticResource CompareStatusToBrush}, ConverterParameter=tint}"/>
                             <Style.Triggers>
@@ -599,7 +599,7 @@
                     </ListBox.ItemTemplate>
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
-                            <EventSetter Event="MouseDoubleClick" Handler="IconItem_DoubleClick"/>
+                            <EventSetter Event="MouseDoubleClick" Handler="OpenItem_DoubleClick"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsHidden}" Value="True">
                                     <Setter Property="Opacity" Value="0.55"/>
