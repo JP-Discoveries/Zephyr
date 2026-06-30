@@ -196,17 +196,9 @@ public class FileItem : INotifyPropertyChanged
 
     public string Icon => IsDirectory ? "" : "";
     public string SizeDisplay => IsDirectory
-        ? (_folderSize.HasValue ? FormatSize(_folderSize.Value) : "")
-        : FormatSize(Size);
+        ? (_folderSize.HasValue ? ByteSize.Format(_folderSize.Value) : "")
+        : ByteSize.Format(Size);
     public string TypeDisplay => IsDirectory
         ? "Folder"
         : string.IsNullOrEmpty(Extension) ? "File" : $"{Extension.TrimStart('.').ToUpper()} File";
-
-    private static string FormatSize(long bytes) => bytes switch
-    {
-        < 1024 => $"{bytes} B",
-        < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
-        < 1024L * 1024 * 1024 => $"{bytes / (1024.0 * 1024):F1} MB",
-        _ => $"{bytes / (1024.0 * 1024 * 1024):F1} GB"
-    };
 }
