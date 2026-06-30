@@ -16,6 +16,14 @@ public static class ShellIntegrationService
         return key != null;
     }
 
+    /// <summary>Opens a path with its default shell handler (the system "Open" verb).
+    /// Failures are swallowed — opening is best-effort.</summary>
+    public static void OpenDefault(string path)
+    {
+        try { Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true }); }
+        catch { }
+    }
+
     public static void Register()
     {
         var exe = Environment.ProcessPath

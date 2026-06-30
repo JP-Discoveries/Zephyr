@@ -23,6 +23,16 @@ public partial class ArchiveProgressDialog : Window
     /// <summary>True if the user cancelled.</summary>
     public bool Canceled { get; private set; }
 
+    /// <summary>Shows the progress dialog for an archive operation and surfaces any
+    /// error to the user. Shared by the toolbar commands and the context menu.</summary>
+    public static void Run(Window? owner, string title,
+        Func<IProgress<ZephyrArchiveService.ArchiveProgress>, CancellationToken, Task> work)
+    {
+        var dlg = new ArchiveProgressDialog(title, work) { Owner = owner };
+        dlg.ShowDialog();
+        if (dlg.Error is { } ex) ZephyrMessageBox.Show(ex.Message, "Error");
+    }
+
     public ArchiveProgressDialog(string title,
         Func<IProgress<ZephyrArchiveService.ArchiveProgress>, CancellationToken, Task> work)
     {

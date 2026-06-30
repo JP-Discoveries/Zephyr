@@ -231,7 +231,7 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
                 if (dlg.ShowDialog() != true) return;
                 var opts   = new ZephyrArchiveService.ExtractOptions(Password: dlg.Password ?? tab.CurrentArchivePassword);
                 var inners = selItems.Select(i => ArchivePath.Parse(i.FullPath).Inner).ToList();
-                RunArchiveWithProgress($"Extracting from {Path.GetFileName(archiveFile)}…",
+                ArchiveProgressDialog.Run(owner,$"Extracting from {Path.GetFileName(archiveFile)}…",
                     (prog, ct) => ZephyrArchiveService.ExtractEntriesAsync(archiveFile, inners, baseInner, dlg.Destination, opts, prog, ct));
             }), "extract selected archive entry");
         }
@@ -250,10 +250,10 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
             var sources = compressSources.Select(i => i.FullPath).ToList();
             var name    = Path.GetFileName(dlg.ResultPath);
             if (dlg.AddToExisting)
-                RunArchiveWithProgress($"Adding to {name}…",
+                ArchiveProgressDialog.Run(owner,$"Adding to {name}…",
                     (prog, ct) => ZephyrArchiveService.AppendToZipAsync(dlg.ResultPath, sources, dlg.Options.Level, prog, ct));
             else
-                RunArchiveWithProgress($"Compressing {name}…",
+                ArchiveProgressDialog.Run(owner,$"Compressing {name}…",
                     (prog, ct) => ZephyrArchiveService.CreateAsync(dlg.ResultPath, sources, dlg.Options, prog, ct));
             tab.Reload();
         }), "compress archive zip tar gz create");
@@ -269,19 +269,19 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
             Add(MakeMenuItem(extractLabel, () =>
             {
                 var defaultDest = extractSources.Count == 1
-                    ? Path.Combine(tab.CurrentPath, StripArchiveExt(extractSources[0].Name))
+                    ? Path.Combine(tab.CurrentPath, ZephyrArchiveService.StripArchiveExtension(extractSources[0].Name))
                     : tab.CurrentPath;
                 var dlg = new ExtractDialog(extractSources.Select(a => a.Name).ToList(), defaultDest) { Owner = owner };
                 if (dlg.ShowDialog() != true) return;
                 var opts  = new ZephyrArchiveService.ExtractOptions(Password: dlg.Password);
                 var title = extractSources.Count == 1 ? $"Extracting {extractSources[0].Name}…" : $"Extracting {extractSources.Count} archives…";
-                RunArchiveWithProgress(title, async (prog, ct) =>
+                ArchiveProgressDialog.Run(owner,title, async (prog, ct) =>
                 {
                     for (int i = 0; i < extractSources.Count; i++)
                     {
                         var a = extractSources[i];
                         var dest = extractSources.Count == 1 ? dlg.Destination
-                                 : dlg.EachToOwnSubfolder ? Path.Combine(dlg.Destination, StripArchiveExt(a.Name))
+                                 : dlg.EachToOwnSubfolder ? Path.Combine(dlg.Destination, ZephyrArchiveService.StripArchiveExtension(a.Name))
                                  : dlg.Destination;
                         int idx = i + 1;
                         IProgress<ZephyrArchiveService.ArchiveProgress> sub = extractSources.Count == 1
@@ -611,40 +611,12 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
         catch (Exception ex) { ShowError(ex.Message); }
     }
 
-    // Runs a compress/extract operation behind the modal progress dialog (bar + ETA + cancel).
-    private void RunArchiveWithProgress(string title,
-        Func<IProgress<ZephyrArchiveService.ArchiveProgress>, CancellationToken, Task> work)
-    {
-        var dlg = new ArchiveProgressDialog(title, work) { Owner = Window.GetWindow(_owner) };
-        dlg.ShowDialog();
-        if (dlg.Error is { } ex) ShowError(ex.Message);
-    }
-
-    // Strips a compound (.tar.gz/.tar.bz2/.tar.xz) or single archive extension.
-    private static string StripArchiveExt(string name)
-    {
-        foreach (var ext in new[] { ".tar.gz", ".tar.bz2", ".tar.xz" })
-            if (name.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
-                return name[..^ext.Length];
-        return Path.GetFileNameWithoutExtension(name);
-    }
-
     private static void ShowError(string msg) =>
         ZephyrMessageBox.Show(msg, "Error");
 
-    // Prompts (with retry) for a locked folder's password until it verifies or the
-    // user cancels. Returns the verified password, or null on cancel.
+    // Prompts (with retry) for a locked folder's password until it verifies or the user cancels.
     private string? PromptFolderPassword(LockedFolder root, string title, string prompt)
-    {
-        bool retry = false;
-        while (true)
-        {
-            var dlg = new PasswordDialog(title, prompt, retry) { Owner = Window.GetWindow(_owner) };
-            if (dlg.ShowDialog() != true) return null;
-            if (FolderLockService.Verify(root, dlg.Password)) return dlg.Password;
-            retry = true;
-        }
-    }
+        => PasswordPrompt.Ask(Window.GetWindow(_owner), title, prompt, pw => FolderLockService.Verify(root, pw));
 
     private static MenuItem MakeMenuItem(string header, Action onClick,
         string? gestureText = null, bool enabled = true)

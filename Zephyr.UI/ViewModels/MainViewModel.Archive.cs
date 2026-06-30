@@ -23,7 +23,7 @@ public partial class MainViewModel
 
         // Single archive defaults to its own subfolder; a batch defaults to the current folder.
         var defaultDest = archives.Count == 1
-            ? Path.Combine(tab.CurrentPath, StripArchiveExtension(archives[0].Name))
+            ? Path.Combine(tab.CurrentPath, ZephyrArchiveService.StripArchiveExtension(archives[0].Name))
             : tab.CurrentPath;
 
         var dlg = new ExtractDialog(archives.Select(a => a.Name).ToList(), defaultDest)
@@ -33,13 +33,13 @@ public partial class MainViewModel
         var opts  = new ZephyrArchiveService.ExtractOptions(Password: dlg.Password);
         var title = archives.Count == 1 ? $"Extracting {archives[0].Name}…" : $"Extracting {archives.Count} archives…";
 
-        RunWithProgress(title, async (prog, ct) =>
+        ArchiveProgressDialog.Run(Application.Current.MainWindow, title, async (prog, ct) =>
         {
             for (int i = 0; i < archives.Count; i++)
             {
                 var archive = archives[i];
                 var dest = archives.Count == 1 ? dlg.Destination
-                         : dlg.EachToOwnSubfolder ? Path.Combine(dlg.Destination, StripArchiveExtension(archive.Name))
+                         : dlg.EachToOwnSubfolder ? Path.Combine(dlg.Destination, ZephyrArchiveService.StripArchiveExtension(archive.Name))
                          : dlg.Destination;
 
                 // For a batch, prefix each report with "(i/n) name" so the user sees which archive.
@@ -70,29 +70,11 @@ public partial class MainViewModel
         var sources = items.Select(i => i.FullPath).ToList();
         var name    = Path.GetFileName(dlg.ResultPath);
         if (dlg.AddToExisting)
-            RunWithProgress($"Adding to {name}…",
+            ArchiveProgressDialog.Run(Application.Current.MainWindow, $"Adding to {name}…",
                 (prog, ct) => ZephyrArchiveService.AppendToZipAsync(dlg.ResultPath, sources, dlg.Options.Level, prog, ct));
         else
-            RunWithProgress($"Compressing {name}…",
+            ArchiveProgressDialog.Run(Application.Current.MainWindow, $"Compressing {name}…",
                 (prog, ct) => ZephyrArchiveService.CreateAsync(dlg.ResultPath, sources, dlg.Options, prog, ct));
         tab.Reload();
-    }
-
-    // Shows the modal progress dialog for an archive operation and surfaces any error.
-    private void RunWithProgress(string title,
-        Func<IProgress<ZephyrArchiveService.ArchiveProgress>, CancellationToken, Task> work)
-    {
-        var dlg = new ArchiveProgressDialog(title, work) { Owner = Application.Current.MainWindow };
-        dlg.ShowDialog();
-        if (dlg.Error is { } ex) ShowError(ex.Message);
-    }
-
-    // Strips a compound (.tar.gz/.tar.bz2/.tar.xz) or single archive extension for naming subfolders.
-    private static string StripArchiveExtension(string name)
-    {
-        foreach (var ext in new[] { ".tar.gz", ".tar.bz2", ".tar.xz" })
-            if (name.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
-                return name[..^ext.Length];
-        return Path.GetFileNameWithoutExtension(name);
     }
 }

@@ -52,17 +52,10 @@ public sealed class LocalFolderProvider(FileSystemService fs) : IDirectoryProvid
     // On success the root is marked unlocked for the rest of the session.
     private static bool PromptFolderUnlock(LockedFolder root)
     {
-        var name  = Path.GetFileName(root.Path.TrimEnd('\\', '/')) is { Length: > 0 } n ? n : root.Path;
-        bool retry = false;
-        while (true)
-        {
-            var dlg = new PasswordDialog("Locked Folder",
-                $"\"{name}\" is locked. Enter its password to open it.", retry)
-                { Owner = Application.Current.MainWindow };
-            if (dlg.ShowDialog() != true) return false;
-            if (FolderLockService.Unlock(root, dlg.Password)) return true;
-            retry = true;
-        }
+        var name = Path.GetFileName(root.Path.TrimEnd('\\', '/')) is { Length: > 0 } n ? n : root.Path;
+        return PasswordPrompt.Ask(Application.Current.MainWindow, "Locked Folder",
+            $"\"{name}\" is locked. Enter its password to open it.",
+            pw => FolderLockService.Unlock(root, pw)) != null;
     }
 
     private static List<FileItem> LoadFlatItems(string path, ZephyrSettings s, CancellationToken ct)

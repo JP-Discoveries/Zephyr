@@ -486,10 +486,7 @@ public partial class TabViewModel : ObservableObject
             }
             RecentInteractionService.Record(path);
             RecentFilesService.AddToRecentDocs(path);
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = path, UseShellExecute = true
-            });
+            ShellIntegrationService.OpenDefault(path);
         }
         catch { }
     }
@@ -508,14 +505,7 @@ public partial class TabViewModel : ObservableObject
             System.Windows.Application.Current?.Dispatcher.Invoke(() => ZephyrMessageBox.Show(ex.Message, "Open"));
             return;
         }
-        try
-        {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = temp, UseShellExecute = true
-            });
-        }
-        catch { }
+        ShellIntegrationService.OpenDefault(temp);
     }
 
     private async Task OpenWpdFileAsync(string path)
@@ -525,14 +515,7 @@ public partial class TabViewModel : ObservableObject
                        ?? objectId;
         var temp = await Task.Run(() => WpdProvider.CopyToTempFile(deviceId, objectId, fileName));
         if (string.IsNullOrEmpty(temp)) return;
-        try
-        {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = temp, UseShellExecute = true
-            });
-        }
-        catch { }
+        ShellIntegrationService.OpenDefault(temp);
     }
 
     private void RefreshNavState()
