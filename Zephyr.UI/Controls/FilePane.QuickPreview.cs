@@ -18,13 +18,21 @@ public partial class FilePane
     private bool _quickPreviewVisible;
     private CancellationTokenSource? _quickPreviewCts;
 
+    // The set the preview is currently browsing. When more than one file is
+    // highlighted this holds just those (in list order); otherwise it holds the
+    // whole folder so a single-file preview can still walk the list.
+    private List<FileItem> _previewItems = new();
+    private int            _previewIndex;
+    private bool           _previewMultiSelect;
+    private ListBox?       _previewList;
+
     private void List_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Space && e.KeyboardDevice.Modifiers == ModifierKeys.None)
         {
             e.Handled = true;
             if (_quickPreviewVisible) CloseQuickPreview();
-            else if (Tab?.SelectedItem is { } item) _ = ShowQuickPreviewAsync(item);
+            else if (Tab?.SelectedItem is { } item) _ = OpenQuickPreviewAsync(sender as ListBox, item);
             return;
         }
 
@@ -35,15 +43,15 @@ public partial class FilePane
             return;
         }
 
-        // While the preview is open, arrow keys move the selection and the preview
-        // follows it live (macOS Quick Look style).
+        // While the preview is open, arrow keys step through the browsed set and
+        // the preview follows live (macOS Quick Look style).
         if (_quickPreviewVisible &&
             e.Key is Key.Up or Key.Down or Key.Left or Key.Right &&
             e.KeyboardDevice.Modifiers == ModifierKeys.None)
         {
             e.Handled = true;
             int delta = e.Key is Key.Up or Key.Left ? -1 : +1;
-            if (MovePreviewSelection(sender as ListBox, delta) is { } next)
+            if (StepPreview(delta) is { } next)
                 _ = ShowQuickPreviewAsync(next);
             return;
         }
@@ -59,20 +67,75 @@ if (e.KeyboardDevice.Modifiers == ModifierKeys.None)
         }
     }
 
-    // Moves the active list's selection by delta (clamped) and returns the newly
-    // selected item, so the open preview can refresh to match.
-    private FileItem? MovePreviewSelection(ListBox? list, int delta)
+    // Captures the set to browse before the first preview shows. When several
+    // files are highlighted the preview cycles only through them; otherwise it
+    // walks the whole folder starting at the selected item.
+    private Task OpenQuickPreviewAsync(ListBox? list, FileItem current)
     {
-        var items = Tab?.Items;
-        if (list == null || items == null || items.Count == 0) return null;
+        _previewList = list;
+        var selected = list?.SelectedItems.OfType<FileItem>().ToList();
 
-        int index = list.SelectedIndex < 0 ? 0 : list.SelectedIndex;
-        index = Math.Clamp(index + delta, 0, items.Count - 1);
+        if (selected is { Count: > 1 })
+        {
+            // Keep list order rather than click order for predictable stepping.
+            var ordered = Tab?.Items?.Where(selected.Contains).ToList();
+            _previewItems       = ordered is { Count: > 0 } ? ordered : selected;
+            _previewMultiSelect = true;
+        }
+        else
+        {
+            _previewItems       = Tab?.Items?.ToList() ?? new List<FileItem>();
+            _previewMultiSelect = false;
+        }
 
-        var next = items[index];
-        list.SelectedItem = next;
-        list.ScrollIntoView(next);
+        _previewIndex = Math.Max(0, _previewItems.IndexOf(current));
+        UpdatePreviewNav();
+        return ShowQuickPreviewAsync(current);
+    }
+
+    // Steps the browsed set by delta (clamped) and returns the new item so the
+    // open preview can refresh. Single-file browsing also moves the real list
+    // selection; multi-select browsing leaves the highlight intact.
+    private FileItem? StepPreview(int delta)
+    {
+        if (_previewItems.Count == 0) return null;
+
+        int index = Math.Clamp(_previewIndex + delta, 0, _previewItems.Count - 1);
+        if (index == _previewIndex) return null;
+        _previewIndex = index;
+
+        var next = _previewItems[index];
+        if (!_previewMultiSelect && _previewList != null)
+        {
+            _previewList.SelectedItem = next;
+            _previewList.ScrollIntoView(next);
+        }
+
+        UpdatePreviewNav();
         return next;
+    }
+
+    // Shows the ‹ n / m › navigator only while browsing a multi-file selection.
+    private void UpdatePreviewNav()
+    {
+        bool showNav = _previewMultiSelect && _previewItems.Count > 1;
+        QuickPreviewNav.Visibility  = showNav ? Visibility.Visible : Visibility.Collapsed;
+        QuickPreviewHint.Visibility = showNav ? Visibility.Collapsed : Visibility.Visible;
+        if (!showNav) return;
+
+        QuickPreviewNavPosition.Text  = $"{_previewIndex + 1} / {_previewItems.Count}";
+        QuickPreviewNavPrev.IsEnabled = _previewIndex > 0;
+        QuickPreviewNavNext.IsEnabled = _previewIndex < _previewItems.Count - 1;
+    }
+
+    private void QuickPreviewNavPrev_Click(object sender, RoutedEventArgs e)
+    {
+        if (StepPreview(-1) is { } prev) _ = ShowQuickPreviewAsync(prev);
+    }
+
+    private void QuickPreviewNavNext_Click(object sender, RoutedEventArgs e)
+    {
+        if (StepPreview(+1) is { } next) _ = ShowQuickPreviewAsync(next);
     }
 
     private async Task ShowQuickPreviewAsync(FileItem item)
@@ -193,6 +256,19 @@ if (e.KeyboardDevice.Modifiers == ModifierKeys.None)
         QuickPreviewImage.Source           = null;
         QuickPreviewPdfPages.ItemsSource   = null;
         QuickPreviewText.Text              = string.Empty;
+        QuickPreviewNav.Visibility         = Visibility.Collapsed;
+        _previewItems                      = new List<FileItem>();
+
+        // Return keyboard focus to the list (a click on the close button/backdrop
+        // moved it off) so Space re-opens the preview without re-clicking a file.
+        var list = _previewList;
+        _previewList = null;
+        if (list != null)
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var target = list.ItemContainerGenerator.ContainerFromItem(list.SelectedItem) as IInputElement;
+                Keyboard.Focus(target ?? list);
+            }), System.Windows.Threading.DispatcherPriority.Input);
     }
 
     private void QuickPreviewClose_Click(object sender, RoutedEventArgs e) => CloseQuickPreview();

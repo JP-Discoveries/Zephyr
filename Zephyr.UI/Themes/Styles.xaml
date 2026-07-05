@@ -12,6 +12,7 @@
     <converters:PathToShellIconConverter          x:Key="PathShellIconConverter"/>
     <converters:HexToBrushConverter               x:Key="HexToBrush"/>
     <converters:CompareStatusToBrushConverter     x:Key="CompareStatusToBrush"/>
+    <converters:ScaleWithMinConverter             x:Key="ScaleWithMin"/>
 
     <!-- ── Button ──────────────────────────────────────────────────────── -->
     <Style TargetType="Button">

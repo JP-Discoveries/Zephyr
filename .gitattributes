@@ -1,10 +1,15 @@
 # Normalize text files to LF in the repo, checkout per-platform.
 * text=auto
 
-# Windows scripts MUST be CRLF in the working tree — cmd.exe misparses
-# label lookups (goto/call) in LF-only batch files, which makes the
-# console flash open and close instead of running.
-*.cmd text eol=crlf
-*.bat text eol=crlf
-*.ps1 text eol=crlf
-*.vbs text eol=crlf
+# Windows scripts MUST reach the user as CRLF. cmd.exe cannot reliably
+# parse LF-only batch files - it misparses multi-line ( ) blocks and
+# label lookups, so the console flashes open and closes.
+#
+# `eol=crlf` alone is not enough: it only converts on checkout/archive,
+# and some download paths (certain zip/extract tools) still deliver LF.
+# Marking these as binary (-text) stores the exact CRLF bytes in the blob,
+# so clone, "Download ZIP", and every tool deliver CRLF verbatim.
+*.cmd -text
+*.bat -text
+*.ps1 -text
+*.vbs -text

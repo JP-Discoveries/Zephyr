@@ -802,10 +802,10 @@
             <Border Background="{DynamicResource ZephyrSurface}"
                     BorderBrush="{DynamicResource ZephyrBorder}"
                     BorderThickness="1" CornerRadius="8"
-                    MaxWidth="700" MaxHeight="540"
-                    MinWidth="320" MinHeight="180"
+                    Width="{Binding ActualWidth, ElementName=QuickPreviewOverlay, Converter={StaticResource ScaleWithMin}, ConverterParameter=0.75;600}"
+                    Height="{Binding ActualHeight, ElementName=QuickPreviewOverlay, Converter={StaticResource ScaleWithMin}, ConverterParameter=0.78;600}"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Margin="24" MouseLeftButtonDown="QuickPreviewCard_MouseDown">
+                    MouseLeftButtonDown="QuickPreviewCard_MouseDown">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -892,12 +892,33 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- Footer hint -->
-                    <Border Grid.Row="2" Padding="12,7"
+                    <!-- Footer: multi-selection navigator, or a hint -->
+                    <Border Grid.Row="2" Padding="12,6"
                             BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="0,1,0,0">
-                        <TextBlock Text="&#x2191;&#x2193; browse  ·  Space or Esc to close"
-                                   Foreground="{DynamicResource ZephyrTextSecondary}"
-                                   FontSize="11" HorizontalAlignment="Center"/>
+                        <Grid>
+                            <!-- Shown while browsing several highlighted files -->
+                            <StackPanel x:Name="QuickPreviewNav" Orientation="Horizontal"
+                                        Visibility="Collapsed" HorizontalAlignment="Center">
+                                <Button x:Name="QuickPreviewNavPrev" Width="30" Height="26" Padding="0"
+                                        Click="QuickPreviewNavPrev_Click" ToolTip="Previous  (&#x2190;)">
+                                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE76B;" FontSize="11"/>
+                                </Button>
+                                <TextBlock x:Name="QuickPreviewNavPosition"
+                                           VerticalAlignment="Center" Margin="14,0"
+                                           MinWidth="44" TextAlignment="Center" FontSize="12"
+                                           Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                                <Button x:Name="QuickPreviewNavNext" Width="30" Height="26" Padding="0"
+                                        Click="QuickPreviewNavNext_Click" ToolTip="Next  (&#x2192;)">
+                                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE76C;" FontSize="11"/>
+                                </Button>
+                            </StackPanel>
+                            <!-- Shown otherwise -->
+                            <TextBlock x:Name="QuickPreviewHint"
+                                       Text="&#x2191;&#x2193; browse  ·  Space or Esc to close"
+                                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                                       FontSize="11" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
                     </Border>
                 </Grid>
             </Border>
