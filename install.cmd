@@ -1,9 +1,22 @@
 @echo off
+rem ============================================================
+rem  Keep this window OPEN no matter what happens (errors, a bad
+rem  label, a crash, or a double-click). We relaunch ourselves
+rem  once under "cmd /k", which never auto-closes, so any error
+rem  text stays on screen. Set _ZEPHYR_STAYOPEN=1 to skip this.
+rem ============================================================
+if not defined _ZEPHYR_STAYOPEN (
+    set "_ZEPHYR_STAYOPEN=1"
+    cmd /k "%~f0"
+    exit /b
+)
+
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 set "PROJECT=Zephyr.UI\Zephyr.UI.csproj"
 set "RELEASEDIR=Zephyr.UI\bin\Release"
+set "LOG=%~dp0install-log.txt"
 
 echo ============================================
 echo    Zephyr - first-time setup
@@ -12,6 +25,19 @@ echo.
 echo This installs prerequisites (the .NET 10 SDK, if missing) and
 echo builds Zephyr. You only need to run this once per PC.
 echo.
+echo A full log of this run is saved to:
+echo    !LOG!
+echo.
+
+rem --- 0. If Zephyr is already running it locks its own files and the ---
+rem ---    build will fail. Ask the user to close it first.            ---
+tasklist /FI "IMAGENAME eq Zephyr.exe" 2>nul | "%SystemRoot%\System32\findstr.exe" /I /C:"Zephyr.exe" >nul
+if not errorlevel 1 (
+    echo Zephyr is currently RUNNING. That locks Zephyr.Core.dll and will make
+    echo the build fail. Please close Zephyr completely, then
+    echo press any key to continue . . .
+    pause >nul
+)
 
 rem --- 1. Find a .NET 10 SDK (PATH, Program Files, or a user-local install) ---
 call :ResolveDotnet
@@ -62,10 +88,16 @@ exit /b 1
 echo Using .NET SDK: !DOTNET!
 echo.
 echo Building Zephyr (Release) - this may take a minute...
-"!DOTNET!" build "%PROJECT%" -c Release --nologo
-if !errorlevel! neq 0 (
+echo.
+rem Capture the build to the log AND show it on screen.
+"!DOTNET!" build "%PROJECT%" -c Release --nologo > "!LOG!" 2>&1
+set "BUILDRC=!errorlevel!"
+type "!LOG!"
+if !BUILDRC! neq 0 (
     echo.
-    echo Build failed. See the messages above.
+    echo *** Build FAILED with exit code !BUILDRC!.
+    echo *** The full log above is also saved at: !LOG!
+    echo *** If it mentions a file "locked by Zephyr", close Zephyr and run this again.
     echo.
     pause
     exit /b 1
