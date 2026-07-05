@@ -88,7 +88,7 @@ for %%D in ("dotnet" "%ProgramFiles%\dotnet\dotnet.exe" "%USERPROFILE%\.dotnet\d
 rem --- Fallback: Microsoft's official user-local installer (no admin) ---
 if defined DOINSTALL if not defined DOTNET (
     echo.
-    echo Installing the .NET 10 SDK to your user profile (no admin required)...
+    echo Installing the .NET 10 SDK to your user profile - no admin needed...
     powershell -NoProfile -ExecutionPolicy Bypass -Command "& { try { Invoke-WebRequest -UseBasicParsing 'https://dot.net/v1/dotnet-install.ps1' -OutFile \"$env:TEMP\dotnet-install.ps1\"; & \"$env:TEMP\dotnet-install.ps1\" -Channel 10.0 } catch { exit 1 } }"
     set "PATH=%USERPROFILE%\.dotnet;!PATH!"
 )
