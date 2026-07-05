@@ -97,10 +97,14 @@ dotnet test Zephyr.slnx
 dotnet run --project Zephyr.UI/Zephyr.UI.csproj
 ```
 
-Or launch the built executable directly:
+### From a fresh clone (no build yet)
 
-- **`run.vbs`** — starts Zephyr with no console window (resolves the exe path relative to itself, so it works from any clone location).
-- **`run.cmd`** — runs `dotnet run` in a console window, handy for seeing build/runtime output.
+If you've cloned the source and just want to run it, double-click **`install.cmd`** once. It checks for the [.NET 10 SDK](https://dotnet.microsoft.com/download) and, with your approval, installs it — via [winget](https://learn.microsoft.com/windows/package-manager/winget/), or a user-local install that needs no admin rights — then builds Zephyr in Release. You only run this once per PC.
+
+After setup, launch Zephyr with either:
+
+- **`run.vbs`** — starts Zephyr with no console window (finds the built exe relative to itself, so it works from any clone location). If Zephyr isn't built yet, it offers to run setup for you.
+- **`run.cmd`** — launches the built exe from a console window; if Zephyr isn't built yet, it offers to run setup.
 
 ## Project layout
 
