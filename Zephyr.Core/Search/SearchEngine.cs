@@ -1,10 +1,20 @@
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Threading.Channels;
 using Zephyr.Core.Models;
 using Zephyr.Core.Security;
 
 namespace Zephyr.Core.Search;
 
+/// <summary>
+/// Directory walker behind the search bar. The tree is walked once by a single producer
+/// (an explicit stack, not async recursion — nesting async iterators per directory level
+/// makes every result pay the full depth on each step). Name/type/size/date filtering
+/// happens in the producer; content matching is fanned out to a bounded set of workers
+/// because it is IO-bound and far more expensive than the walk itself.
+/// </summary>
 public class SearchEngine
 {
     public static readonly IReadOnlyDictionary<FileTypeFilter, string[]> TypeExtensions =
@@ -19,153 +29,311 @@ public class SearchEngine
             [FileTypeFilter.Executables] = [".exe",".dll",".msi",".bat",".cmd",".ps1",".sh",".app",".deb",".rpm"],
         };
 
+    // Files larger than this are skipped in content search to keep scans bounded.
+    private const long MaxContentBytes = 20L * 1024 * 1024;
+
+    // Bounded queues give the producer backpressure so a fast walk can't buffer an
+    // entire drive's worth of candidates ahead of a slow consumer.
+    private const int WalkQueueCapacity   = 2048;
+    private const int ResultQueueCapacity = 1024;
+
+    private static readonly EnumerationOptions EnumOptions = new()
+    {
+        // Keep walking past folders we can't open instead of losing the rest of the
+        // parent's entries, which is what an unguarded enumerator does when it throws.
+        IgnoreInaccessible    = true,
+        RecurseSubdirectories = false,
+        AttributesToSkip      = 0, // hidden/system are decided below, per user settings
+    };
+
     public async IAsyncEnumerable<FileItem> SearchAsync(
         SearchOptions options,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        await foreach (var item in ScanAsync(options.SearchRoot, options, ct))
-            yield return item;
-    }
+        // Non-filesystem locations (This PC, archives, phones) have no walkable root.
+        if (string.IsNullOrEmpty(options.SearchRoot) || !Directory.Exists(options.SearchRoot))
+            yield break;
 
-    private async IAsyncEnumerable<FileItem> ScanAsync(
-        string directory, SearchOptions options,
-        [EnumeratorCancellation] CancellationToken ct)
-    {
-        if (ct.IsCancellationRequested) yield break;
-
-        DirectoryInfo dir;
-        try { dir = new DirectoryInfo(directory); }
-        catch { yield break; }
-
-        IEnumerable<FileSystemInfo> entries;
-        try { entries = dir.EnumerateFileSystemInfos(); }
-        catch { yield break; }
-
-        int count = 0;
-        foreach (var entry in entries)
+        // Compile the pattern once for the whole scan rather than per file.
+        Regex? rx = null;
+        if (options.UseRegex && !string.IsNullOrEmpty(options.Query))
         {
-            if (ct.IsCancellationRequested) yield break;
+            var opts = RegexOptions.CultureInvariant
+                       | (options.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase)
+                       | (options.MatchContent ? RegexOptions.Compiled : RegexOptions.None);
+            try { rx = new Regex(options.Query, opts); }
+            catch { yield break; } // invalid pattern → no matches at all
+        }
 
-            var isHidden = (entry.Attributes & FileAttributes.Hidden) != 0;
-            var isSystem = (entry.Attributes & FileAttributes.System) != 0;
-            if (!options.IncludeHidden && isHidden) goto recurse;
-            if (!options.IncludeSystem && isSystem) goto recurse;
+        var walk = Channel.CreateBounded<FileItem>(new BoundedChannelOptions(WalkQueueCapacity)
+        {
+            SingleReader = !options.MatchContent, // content mode fans out to grep workers
+        });
 
-            if (Matches(entry, options) && await ContentMatches(entry, options, ct))
+        // In name mode the walk output *is* the result stream; content mode inserts a grep
+        // stage between the two. Failures travel to the reader as channel completion, so
+        // there is no task left for the caller to await.
+        var results = options.MatchContent
+            ? Channel.CreateBounded<FileItem>(new BoundedChannelOptions(ResultQueueCapacity) { SingleReader = true })
+            : walk;
+
+        // ct is honoured inside the bodies rather than handed to Task.Run: a task cancelled
+        // before it ever starts would never complete its channel, hanging the reader.
+        _ = Task.Run(async () =>
+        {
+            try { await WalkAsync(options, rx, walk.Writer, ct); walk.Writer.TryComplete(); }
+            catch (Exception ex) { walk.Writer.TryComplete(ex); }
+        }, CancellationToken.None);
+
+        if (options.MatchContent)
+            _ = Task.Run(async () =>
             {
-                yield return new FileItem
+                try
                 {
-                    Name           = entry.Name,
-                    FullPath       = entry.FullName,
-                    IsDirectory    = entry is DirectoryInfo,
-                    Size           = entry is FileInfo fi ? fi.Length : 0,
-                    LastModified   = entry.LastWriteTime,
-                    Created        = entry.CreationTime,
-                    Extension      = entry is FileInfo
-                                     ? Path.GetExtension(entry.Name).ToLowerInvariant()
-                                     : string.Empty,
-                    Attributes     = entry.Attributes,
-                    SearchLocation = Path.GetDirectoryName(entry.FullName) ?? string.Empty
-                };
-            }
+                    await Parallel.ForEachAsync(
+                        walk.Reader.ReadAllAsync(ct),
+                        new ParallelOptions
+                        {
+                            MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount, 2, 8),
+                            CancellationToken      = ct,
+                        },
+                        async (candidate, token) =>
+                        {
+                            if (await ContentMatches(candidate, options, rx, token))
+                                await results.Writer.WriteAsync(candidate, token);
+                        });
+                    results.Writer.TryComplete();
+                }
+                catch (Exception ex) { results.Writer.TryComplete(ex); }
+            }, CancellationToken.None);
 
-            recurse:
-            // Don't descend into a locked folder that hasn't been unlocked this session —
-            // otherwise search would leak the names of files the lock is meant to hide.
-            if (entry is DirectoryInfo sub && options.Scope == SearchScope.Recursive
-                && !FolderLockService.IsGated(sub.FullName))
-                await foreach (var r in ScanAsync(sub.FullName, options, ct))
-                    yield return r;
-
-            if (++count % 100 == 0) await Task.Yield();
+        try
+        {
+            await foreach (var item in results.Reader.ReadAllAsync(ct))
+                yield return item;
+        }
+        finally
+        {
+            // The reader is gone — cancelled, or the caller stopped early. Close the
+            // pipeline so the walk and grep stages unblock instead of parking forever on
+            // a bounded channel nobody is draining.
+            walk.Writer.TryComplete();
+            results.Writer.TryComplete();
         }
     }
 
-    // Files larger than this are skipped in content search to keep scans bounded.
-    private const long MaxContentBytes = 20L * 1024 * 1024;
+    /// <summary>
+    /// Walks the tree, writing everything that passes the name/type/size/date filters.
+    /// In content mode files are written unfiltered by name — the query is applied to
+    /// their contents by the grep workers instead.
+    /// <para>
+    /// Directories are handed out to a small pool of workers from a shared queue. Walking
+    /// is dominated by per-directory metadata latency rather than CPU, so a single
+    /// sequential walker spends most of its time waiting; overlapping several folders is
+    /// what makes a deep tree finish in a usable amount of time.
+    /// </para>
+    /// </summary>
+    private static async Task WalkAsync(
+        SearchOptions options, Regex? rx, ChannelWriter<FileItem> output, CancellationToken ct)
+    {
+        var queue = new ConcurrentQueue<string>();
+        queue.Enqueue(options.SearchRoot);
+
+        // Directories queued but not yet finished. Reaching zero means the walk is done —
+        // there is no other way to know, since any folder may still add more.
+        var outstanding = 1;
+        // One permit per queued directory, so a worker only wakes when there is work.
+        using var available = new SemaphoreSlim(1);
+
+        var workerCount = options.Scope == SearchScope.Recursive
+            ? Math.Clamp(Environment.ProcessorCount / 2, 2, 8)
+            : 1;
+
+        var workers = new Task[workerCount];
+        for (var i = 0; i < workerCount; i++) workers[i] = Task.Run(WorkAsync, ct);
+        await Task.WhenAll(workers);
+
+        async Task WorkAsync()
+        {
+            while (true)
+            {
+                await available.WaitAsync(ct);
+                // Woken with an empty queue = the completion flood below; nothing left.
+                if (!queue.TryDequeue(out var directory)) return;
+
+                try { await ScanDirectoryAsync(directory); }
+                finally
+                {
+                    if (Interlocked.Decrement(ref outstanding) == 0)
+                        available.Release(workerCount); // wake every worker so they can exit
+                }
+            }
+        }
+
+        async Task ScanDirectoryAsync(string directory)
+        {
+            IEnumerator<FileSystemInfo> entries;
+            try { entries = new DirectoryInfo(directory).EnumerateFileSystemInfos("*", EnumOptions).GetEnumerator(); }
+            catch { return; }
+
+            using (entries)
+            {
+                while (true)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    FileSystemInfo entry;
+                    try
+                    {
+                        if (!entries.MoveNext()) break;
+                        entry = entries.Current;
+                    }
+                    catch { break; } // enumeration died mid-folder; keep the rest of the tree
+
+                    var attrs = entry.Attributes;
+                    var excluded = (!options.IncludeHidden && (attrs & FileAttributes.Hidden) != 0)
+                                || (!options.IncludeSystem && (attrs & FileAttributes.System) != 0);
+                    var isDirectory = (attrs & FileAttributes.Directory) != 0;
+
+                    if (isDirectory && options.Scope == SearchScope.Recursive
+                        // A folder the user has excluded from results is not worth the
+                        // scan either — descending into $Recycle.Bin and AppData was most
+                        // of the cost of searching a drive or a user profile.
+                        && !excluded
+                        // Junctions and symlinks alias trees we either already walk or
+                        // that loop back on themselves (AppData\Local\Application Data).
+                        && (attrs & FileAttributes.ReparsePoint) == 0
+                        // Don't descend into a locked folder that hasn't been unlocked this
+                        // session — search would leak the names the lock is meant to hide.
+                        && !FolderLockService.IsGated(entry.FullName))
+                    {
+                        Interlocked.Increment(ref outstanding);
+                        queue.Enqueue(entry.FullName);
+                        available.Release();
+                    }
+
+                    if (excluded) continue;
+                    if (options.MatchContent && isDirectory) continue; // folders have no contents to grep
+                    if (!Matches(entry, attrs, options, rx)) continue;
+
+                    await output.WriteAsync(ToItem(entry, attrs, isDirectory), ct);
+                }
+            }
+        }
+    }
+
+    private static FileItem ToItem(FileSystemInfo entry, FileAttributes attrs, bool isDirectory) => new()
+    {
+        Name           = entry.Name,
+        FullPath       = entry.FullName,
+        IsDirectory    = isDirectory,
+        Size           = entry is FileInfo fi ? fi.Length : 0,
+        LastModified   = entry.LastWriteTime,
+        Created        = entry.CreationTime,
+        Extension      = isDirectory ? string.Empty : Path.GetExtension(entry.Name).ToLowerInvariant(),
+        Attributes     = attrs,
+        SearchLocation = Path.GetDirectoryName(entry.FullName) ?? string.Empty,
+    };
 
     /// <summary>In content mode, returns true if the file's text contains the query.
-    /// Folders, binary files, empty files and files over the size cap never match.
-    /// When content mode is off this is a no-op that always passes.</summary>
-    private static async Task<bool> ContentMatches(FileSystemInfo entry, SearchOptions options, CancellationToken ct)
+    /// Binary files, empty files and files over the size cap never match.</summary>
+    private static async Task<bool> ContentMatches(
+        FileItem item, SearchOptions options, Regex? rx, CancellationToken ct)
     {
-        if (!options.MatchContent) return true;
         if (string.IsNullOrEmpty(options.Query)) return true;
-        if (entry is not FileInfo fi) return false;
-        if (fi.Length == 0 || fi.Length > MaxContentBytes) return false;
+        if (item.Size == 0 || item.Size > MaxContentBytes) return false;
 
         try
         {
             await using var stream = new FileStream(
-                fi.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
+                item.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
                 64 * 1024, FileOptions.SequentialScan | FileOptions.Asynchronous);
 
             // Binary sniff: a NUL byte in the first 8 KB means it isn't grep-able text.
-            var head = new byte[Math.Min(8192, (int)fi.Length)];
-            int read = await stream.ReadAsync(head.AsMemory(0, head.Length), ct);
-            for (int i = 0; i < read; i++)
-                if (head[i] == 0) return false;
+            var headLength = (int)Math.Min(8192, item.Size);
+            var head = ArrayPool<byte>.Shared.Rent(headLength);
+            try
+            {
+                int read = await stream.ReadAsync(head.AsMemory(0, headLength), ct);
+                if (head.AsSpan(0, read).IndexOf((byte)0) >= 0) return false;
+            }
+            finally { ArrayPool<byte>.Shared.Return(head); }
             stream.Position = 0;
 
-            Regex? rx = null;
-            if (options.UseRegex)
-            {
-                try { rx = new Regex(options.Query, options.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase); }
-                catch { return false; } // invalid pattern → no content matches
-            }
-            var cmp = options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-
             using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
-            string? line;
-            while ((line = await reader.ReadLineAsync(ct)) is not null)
+
+            if (rx is not null)
             {
-                if (rx is not null ? rx.IsMatch(line) : line.Contains(options.Query, cmp))
-                    return true;
+                string? line;
+                while ((line = await reader.ReadLineAsync(ct)) is not null)
+                    if (rx.IsMatch(line)) return true;
+                return false;
             }
+
+            var cmp = options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            return await ContainsAsync(reader, options.Query, cmp, ct);
         }
         catch (OperationCanceledException) { throw; }
         catch { return false; } // unreadable/locked file → skip
-        return false;
     }
 
-    private static bool Matches(FileSystemInfo entry, SearchOptions options)
+    /// <summary>Scans the reader for a literal substring over pooled char buffers,
+    /// carrying query.Length-1 chars across reads so a match spanning a buffer
+    /// boundary is still found. Avoids the string-per-line cost of ReadLineAsync.</summary>
+    private static async Task<bool> ContainsAsync(
+        StreamReader reader, string query, StringComparison cmp, CancellationToken ct)
     {
+        var size = Math.Max(64 * 1024, query.Length * 2);
+        var buffer = ArrayPool<char>.Shared.Rent(size);
+        try
+        {
+            int overlap = query.Length - 1;
+            int carried = 0;
+            while (true)
+            {
+                int read = await reader.ReadAsync(buffer.AsMemory(carried, buffer.Length - carried), ct);
+                if (read == 0) return false;
+
+                int total = carried + read;
+                if (buffer.AsSpan(0, total).IndexOf(query.AsSpan(), cmp) >= 0) return true;
+
+                carried = Math.Min(overlap, total);
+                if (carried > 0)
+                    buffer.AsSpan(total - carried, carried).CopyTo(buffer.AsSpan(0, carried));
+            }
+        }
+        finally { ArrayPool<char>.Shared.Return(buffer); }
+    }
+
+    private static bool Matches(FileSystemInfo entry, FileAttributes attrs, SearchOptions options, Regex? rx)
+    {
+        var isDirectory = (attrs & FileAttributes.Directory) != 0;
+
         // Name / regex match — skipped in content mode, where the query is matched
         // against file contents instead (see ContentMatches).
         if (!options.MatchContent && !string.IsNullOrEmpty(options.Query))
         {
-            bool hit;
-            if (options.UseRegex)
-            {
-                try
-                {
-                    var rx = options.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
-                    hit = Regex.IsMatch(entry.Name, options.Query, rx);
-                }
-                catch { return false; }
-            }
-            else
-            {
-                var cmp = options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                hit = entry.Name.Contains(options.Query, cmp);
-            }
+            var hit = rx is not null
+                ? rx.IsMatch(entry.Name)
+                : entry.Name.Contains(options.Query,
+                    options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
             if (!hit) return false;
         }
 
         // Type filter
         if (options.TypeFilter == FileTypeFilter.Folders)
-            return entry is DirectoryInfo;
+            return isDirectory;
 
         if (options.CustomExtensions != null)
         {
-            if (entry is not FileInfo cfi) return false;
-            if (!options.CustomExtensions.Contains(cfi.Extension.ToLowerInvariant())) return false;
+            if (isDirectory) return false;
+            if (!options.CustomExtensions.Contains(Path.GetExtension(entry.Name).ToLowerInvariant())) return false;
         }
         else if (options.TypeFilter != FileTypeFilter.All)
         {
-            if (entry is not FileInfo fileInfo) return false;
+            if (isDirectory) return false;
             if (!TypeExtensions.TryGetValue(options.TypeFilter, out var exts)) return false;
-            if (!exts.Contains(fileInfo.Extension.ToLowerInvariant())) return false;
+            if (!exts.Contains(Path.GetExtension(entry.Name).ToLowerInvariant())) return false;
         }
 
         // Size filter

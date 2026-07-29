@@ -158,4 +158,92 @@ public class ContentSearchTests : IDisposable
 
         Assert.Contains("report.txt", results);
     }
+
+    [Fact]
+    public async Task ContentSearch_FindsMatchSpanningBufferBoundary()
+    {
+        // Match straddles the 64 KB read boundary the content scanner uses.
+        Write("big.txt", new string('a', 65_536 - 3) + "needle" + new string('b', 128));
+
+        var results = await Run(new SearchOptions
+        {
+            SearchRoot   = _root,
+            Query        = "needle",
+            MatchContent = true,
+            Scope        = SearchScope.Recursive,
+        });
+
+        Assert.Contains("big.txt", results);
+    }
+
+    [Fact]
+    public async Task NameSearch_CurrentDirectoryScope_DoesNotDescend()
+    {
+        Write("top-target.txt", "x");
+        Write("sub/nested-target.txt", "x");
+
+        var results = await Run(new SearchOptions
+        {
+            SearchRoot = _root,
+            Query      = "target",
+            Scope      = SearchScope.CurrentDirectory,
+        });
+
+        Assert.Contains("top-target.txt", results);
+        Assert.DoesNotContain("nested-target.txt", results);
+    }
+
+    [Fact]
+    public async Task NameSearch_SkipsFilesInsideHiddenFolders_WhenHiddenExcluded()
+    {
+        Write("hidden-dir/target.txt", "x");
+        new DirectoryInfo(Path.Combine(_root, "hidden-dir")).Attributes |= FileAttributes.Hidden;
+
+        var excluded = await Run(new SearchOptions
+        {
+            SearchRoot    = _root,
+            Query         = "target",
+            Scope         = SearchScope.Recursive,
+            IncludeHidden = false,
+        });
+        var included = await Run(new SearchOptions
+        {
+            SearchRoot    = _root,
+            Query         = "target",
+            Scope         = SearchScope.Recursive,
+            IncludeHidden = true,
+        });
+
+        Assert.DoesNotContain("target.txt", excluded);
+        Assert.Contains("target.txt", included);
+    }
+
+    [Fact]
+    public async Task NameSearch_InvalidRegex_YieldsNothing()
+    {
+        Write("anything.txt", "x");
+
+        var results = await Run(new SearchOptions
+        {
+            SearchRoot = _root,
+            Query      = "([unclosed",
+            UseRegex   = true,
+            Scope      = SearchScope.Recursive,
+        });
+
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public async Task Search_NonExistentRoot_YieldsNothingWithoutThrowing()
+    {
+        var results = await Run(new SearchOptions
+        {
+            SearchRoot = "thispc:",
+            Query      = "target",
+            Scope      = SearchScope.Recursive,
+        });
+
+        Assert.Empty(results);
+    }
 }

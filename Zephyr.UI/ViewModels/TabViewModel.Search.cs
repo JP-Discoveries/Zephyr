@@ -82,7 +82,9 @@ public partial class TabViewModel
         catch (OperationCanceledException) { }
         finally
         {
-            IsSearching = false;
+            // Only the newest search owns the flag: a cancelled run means another search
+            // (or ClearSearch) has taken over, and clearing it here would kill its spinner.
+            if (!ct.IsCancellationRequested) IsSearching = false;
             OnPropertyChanged(nameof(ItemCountText));
             OnPropertyChanged(nameof(SelectionText));
         }
@@ -135,7 +137,15 @@ public partial class TabViewModel
         });
     }
 
-    partial void OnMatchContentChanged(bool value)
+    partial void OnMatchContentChanged(bool value) => RerunSearchIfActive();
+
+    // Scope is baked into the running scan, so flipping it has to restart the search —
+    // without this the toggle only took effect on the next keystroke.
+    partial void OnSearchRecursiveChanged(bool value) => RerunSearchIfActive();
+
+    /// <summary>Restarts the scan when a search is on screen and something it depends on
+    /// (scope, content mode, a filter) changed. No-op outside search mode.</summary>
+    internal void RerunSearchIfActive()
     {
         if (IsSearchMode && !string.IsNullOrEmpty(SearchQuery)) _ = StartDeepSearchAsync();
     }

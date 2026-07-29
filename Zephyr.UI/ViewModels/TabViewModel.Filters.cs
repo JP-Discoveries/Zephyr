@@ -47,15 +47,24 @@ public partial class TabViewModel
         ActiveSizeFilter = SizeFilter.All;
         ActiveDateFilter = DateFilter.All;
         _suppressFilters = false;
-        ApplyFilters();
+        FilterCriteriaChanged();
     }
 
     // ── Filter reactions ──────────────────────────────────────────────────────
-    partial void OnSelectedTypeFilterChanged(TypeFilterItem? value) { if (!_suppressFilters) ApplyFilters(); }
-    partial void OnActiveSizeFilterChanged(SizeFilter      value) => ApplyFilters();
-    partial void OnActiveDateFilterChanged(DateFilter      value) => ApplyFilters();
-    partial void OnActiveSortColumnChanged(SortColumn      value) => ApplyFilters();
-    partial void OnSortAscendingChanged(bool               value) => ApplyFilters();
+    partial void OnSelectedTypeFilterChanged(TypeFilterItem? value) { if (!_suppressFilters) FilterCriteriaChanged(); }
+    partial void OnActiveSizeFilterChanged(SizeFilter      value) { if (!_suppressFilters) FilterCriteriaChanged(); }
+    partial void OnActiveDateFilterChanged(DateFilter      value) { if (!_suppressFilters) FilterCriteriaChanged(); }
+    partial void OnActiveSortColumnChanged(SortColumn      value) { if (!_suppressFilters) ApplyFilters(); }
+    partial void OnSortAscendingChanged(bool               value) { if (!_suppressFilters) ApplyFilters(); }
+
+    /// <summary>A type/size/date filter changed. In search mode those criteria are pushed
+    /// down into the scan itself, so the search has to be re-run rather than the in-memory
+    /// list re-filtered (ApplyFilters only ever sees the current folder's items).</summary>
+    private void FilterCriteriaChanged()
+    {
+        if (IsSearchMode) RerunSearchIfActive();
+        else              ApplyFilters();
+    }
 
     private void RebuildTypeFilterOptions()
     {
