@@ -29,6 +29,11 @@ public partial class FilePane
     private const double MaxTypeWidth   = 140;
     private const double MinColumnWidth = 40;   // non-Name columns never shrink below this
 
+    // Width the columns actually get: the pane less the drag gutters (Padding, which
+    // sits inboard of the scrollbar) and room for the scrollbar itself.
+    private double AvailableColumnWidth =>
+        Math.Max(0, FileList.ActualWidth - FileList.Padding.Left - FileList.Padding.Right - 22);
+
     // ── Column sort ────────────────────────────────────────────────────────
     private void ColumnHeader_Click(object sender, RoutedEventArgs e)
     {
@@ -100,7 +105,7 @@ public partial class FilePane
             }
         }
 
-        double avail = Math.Max(0, FileList.ActualWidth - 22);
+        double avail = AvailableColumnWidth;
         double nameW = Math.Max(120, avail - reserved);
 
         _isRebalancing = true;
@@ -119,6 +124,41 @@ public partial class FilePane
         {
             _isRebalancing = false;
         }
+    }
+
+    // ── Header band ──────────────────────────────────────────────────────────
+    // HeaderBand paints the column-header bar across the full pane width, including
+    // the drag gutters either side of the list. Its height has to match the real
+    // header row, which depends on the header style's font and padding.
+    private GridViewHeaderRowPresenter? _headerPresenter;
+
+    private void SyncHeaderBand()
+    {
+        ListView? list = FileList.Visibility         == Visibility.Visible ? FileList
+                       : SearchResultList.Visibility == Visibility.Visible ? SearchResultList
+                       : null;
+        if (list is null || FindDescendant<GridViewHeaderRowPresenter>(list) is not { } presenter) return;
+
+        if (!ReferenceEquals(presenter, _headerPresenter))
+        {
+            UnsubscribeHeaderBand();
+            _headerPresenter = presenter;
+            presenter.SizeChanged += OnHeaderPresenterSizeChanged;
+        }
+        if (presenter.ActualHeight > 0) HeaderBand.Height = presenter.ActualHeight;
+    }
+
+    private void OnHeaderPresenterSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (e.HeightChanged && ((FrameworkElement)sender).ActualHeight > 0)
+            HeaderBand.Height = ((FrameworkElement)sender).ActualHeight;
+    }
+
+    private void UnsubscribeHeaderBand()
+    {
+        if (_headerPresenter is null) return;
+        _headerPresenter.SizeChanged -= OnHeaderPresenterSizeChanged;
+        _headerPresenter = null;
     }
 
     // ── Column resize rebalancing (DependencyPropertyDescriptor approach) ────────
@@ -170,7 +210,7 @@ public partial class FilePane
         var nameCol = gv.Columns.FirstOrDefault(c => c.Header as string == "Name");
         if (nameCol == null) return;
 
-        double avail = Math.Max(0, FileList.ActualWidth - 22);
+        double avail = AvailableColumnWidth;
 
         _isRebalancing = true;
         try

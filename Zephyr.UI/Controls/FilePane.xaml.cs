@@ -17,6 +17,7 @@ namespace Zephyr.UI.Controls;
 //   FilePane.Columns.cs        — details-view column sort/size/show-hide
 //   FilePane.TabDrag.cs        — tab reorder / split / new-window drag (Win32 hook)
 //   FilePane.QuickPreview.cs   — space-bar Quick Look overlay + jump-to-letter
+//   FilePane.Marquee.cs        — rubber-band selection from the list gutters / empty space
 //   FileContextMenuBuilder.cs  — the right-click command menu
 public partial class FilePane : UserControl
 {
@@ -62,6 +63,7 @@ public partial class FilePane : UserControl
         }
         AutoSizeColumns();
         SubscribeColumnWidths();
+        Dispatcher.InvokeAsync(SyncHeaderBand, DispatcherPriority.Loaded);
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -70,8 +72,10 @@ public partial class FilePane : UserControl
         if (Pane is { } pane) pane.PropertyChanged -= OnPanePropertyChanged;
         if (_observedTab is { } tab) tab.PropertyChanged -= OnTabPropertyChanged;
         if (_tabIsDragging) AbortTabDrag(); else StopDragTimer();
+        EndMarquee(cancel: false);
         Mouse.Capture(null);
         UnsubscribeColumnWidths();
+        UnsubscribeHeaderBand();
     }
 
     private void OnPanePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -104,7 +108,10 @@ public partial class FilePane : UserControl
     private void OnTabPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(TabViewModel.ShowDetailsView))
+        {
             Dispatcher.InvokeAsync(AutoSizeColumns, DispatcherPriority.Background);
+            Dispatcher.InvokeAsync(SyncHeaderBand,  DispatcherPriority.Loaded);
+        }
     }
 
     private PaneViewModel? Pane => DataContext as PaneViewModel;
@@ -351,6 +358,7 @@ public partial class FilePane : UserControl
     private void List_MouseMove(object sender, MouseEventArgs e)
     {
         if (e.LeftButton != MouseButtonState.Pressed) return;
+        if (_marqueeActive) return;   // rubber-band drag owns the mouse
         var pos  = e.GetPosition(null);
         var diff = _dragStart - pos;
         if (Math.Abs(diff.X) < SystemParameters.MinimumHorizontalDragDistance &&

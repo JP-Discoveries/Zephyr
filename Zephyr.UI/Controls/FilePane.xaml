@@ -4,6 +4,13 @@
              xmlns:vm="clr-namespace:Zephyr.UI.ViewModels"
              xmlns:controls="clr-namespace:Zephyr.UI.Controls"
              xmlns:search="clr-namespace:Zephyr.Core.Search;assembly=Zephyr.Core">
+    <UserControl.Resources>
+        <!-- Dead space either side of the file rows, so a rubber-band drag has
+             somewhere to start that isn't a file row. Applied as Padding, not Margin:
+             the scroll-viewer templates put Padding on the header+content area only,
+             which keeps the gutter inboard of the vertical scrollbar. -->
+        <Thickness x:Key="ListGutter">9,0,9,0</Thickness>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="36"/>   <!-- Tab bar -->
@@ -302,13 +309,30 @@
                 <ColumnDefinition Width="{Binding ActiveTab.ShowPreviewPane, Converter={StaticResource BoolToGridLength}, ConverterParameter=290}"/>
             </Grid.ColumnDefinitions>
 
-            <!-- File list area -->
-            <Grid Grid.Column="0">
+            <!-- File list area. Each list is inset by a gutter on the left and right:
+                 that dead space (plus the blank area under the last row) is where a
+                 rubber-band selection drag can start — see FilePane.Marquee.cs. -->
+            <Grid Grid.Column="0" x:Name="ListArea"
+                  Background="{DynamicResource ZephyrBackground}"
+                  PreviewMouseLeftButtonDown="ListArea_PreviewMouseLeftButtonDown">
+
+                <!-- Header band. Runs the full width behind the column headers — the
+                     details/search lists are transparent — so the header bar reaches
+                     edge to edge and the gutters read as part of it rather than as
+                     empty space beside it. Height tracks the real header row (see
+                     SyncHeaderBand); 27 is just a sane value before first layout. -->
+                <Border x:Name="HeaderBand" VerticalAlignment="Top" Height="27"
+                        Background="{DynamicResource ZephyrSurface}"
+                        BorderBrush="{DynamicResource ZephyrBorder}"
+                        BorderThickness="0,0,0,1"
+                        Visibility="{Binding ActiveTab.ShowIconView, Converter={StaticResource InverseBoolToVis}}"/>
 
                 <!-- Details view -->
                 <ListView x:Name="FileList"
                           ItemsSource="{Binding ActiveTab.Items}"
                           SelectionMode="Extended" BorderThickness="0"
+                          Padding="{StaticResource ListGutter}"
+                          Background="Transparent"
                           VirtualizingPanel.IsVirtualizing="True"
                           VirtualizingPanel.VirtualizationMode="Recycling"
                           VirtualizingPanel.ScrollUnit="Pixel"
@@ -429,6 +453,8 @@
                 <ListView x:Name="SearchResultList"
                           ItemsSource="{Binding ActiveTab.Items}"
                           SelectionMode="Extended" BorderThickness="0"
+                          Padding="{StaticResource ListGutter}"
+                          Background="Transparent"
                           Visibility="{Binding ActiveTab.ShowListView, Converter={StaticResource BoolToVis}}"
                           SelectionChanged="SearchResultList_SelectionChanged"
                           AllowDrop="True"
@@ -508,6 +534,7 @@
                 <ListBox x:Name="IconView"
                          ItemsSource="{Binding ActiveTab.Items}"
                          SelectionMode="Extended" BorderThickness="0"
+                         Padding="{StaticResource ListGutter}"
                          Background="{DynamicResource ZephyrBackground}"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          ScrollViewer.CanContentScroll="True"
@@ -619,6 +646,16 @@
                         </Style>
                     </ListBox.ItemContainerStyle>
                 </ListBox>
+
+                <!-- ── Rubber-band selection box ──────────────────────────── -->
+                <Canvas x:Name="MarqueeLayer" IsHitTestVisible="False">
+                    <Border x:Name="MarqueeBox" Visibility="Collapsed"
+                            BorderBrush="{DynamicResource ZephyrAccent}"
+                            BorderThickness="1" CornerRadius="1"
+                            SnapsToDevicePixels="True">
+                        <Rectangle Fill="{DynamicResource ZephyrAccent}" Opacity="0.18"/>
+                    </Border>
+                </Canvas>
             </Grid>
 
             <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
