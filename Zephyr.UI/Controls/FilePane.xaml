@@ -107,6 +107,7 @@
                     <ColumnDefinition Width="4"/>
                     <ColumnDefinition Width="*"/>      <!-- Breadcrumb -->
                     <ColumnDefinition Width="4"/>
+                    <ColumnDefinition Width="Auto"/>   <!-- Copy path -->
                     <ColumnDefinition Width="Auto"/>   <!-- Refresh -->
                     <ColumnDefinition Width="Auto"/>   <!-- Flat view -->
                     <ColumnDefinition Width="Auto"/>   <!-- Filter toggle -->
@@ -134,12 +135,17 @@
                         BorderThickness="1" CornerRadius="6"
                         Height="30" VerticalAlignment="Center"
                         Cursor="IBeam" ClipToBounds="True"
+                        ToolTip="{Binding ActiveTab.CurrentPath}"
+                        ToolTipService.ShowDuration="60000"
                         MouseLeftButtonDown="BreadcrumbArea_Click">
                     <Grid>
-                        <ScrollViewer HorizontalScrollBarVisibility="Hidden"
+                        <ScrollViewer x:Name="BreadcrumbScroller"
+                                      HorizontalScrollBarVisibility="Hidden"
                                       VerticalScrollBarVisibility="Disabled" Focusable="False"
+                                      PreviewMouseWheel="BreadcrumbScroller_MouseWheel"
                                       Visibility="{Binding ActiveTab.IsEditingPath, Converter={StaticResource InverseBoolToVis}}">
-                            <ItemsControl ItemsSource="{Binding ActiveTab.BreadcrumbSegments}">
+                            <ItemsControl ItemsSource="{Binding ActiveTab.BreadcrumbSegments}"
+                                          SizeChanged="BreadcrumbItems_SizeChanged">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0"/>
@@ -170,13 +176,20 @@
                     </Grid>
                 </Border>
 
-                <Button Grid.Column="6" Width="32" Height="32"
+                <!-- Copy full path -->
+                <Button Grid.Column="6" Width="32" Height="32" x:Name="CopyPathButton"
+                        Click="CopyPathButton_Click"
+                        ToolTip="Copy full path (Ctrl+Shift+C)">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8C8;" FontSize="14"/>
+                </Button>
+
+                <Button Grid.Column="7" Width="32" Height="32"
                         Command="{Binding ActiveTab.RefreshCommand}" ToolTip="Refresh (F5)">
                     <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE72C;" FontSize="14"/>
                 </Button>
 
                 <!-- Flat view toggle (show all files from subfolders) -->
-                <Button Grid.Column="7" Width="32" Height="32"
+                <Button Grid.Column="8" Width="32" Height="32"
                         Command="{Binding ActiveTab.ToggleFlatViewCommand}"
                         ToolTip="{Binding ActiveTab.FlatViewTooltip}">
                     <Button.Style>
@@ -192,7 +205,7 @@
                 </Button>
 
                 <!-- Filter toggle -->
-                <Button Grid.Column="8" Width="32" Height="32" ToolTip="Filters">
+                <Button Grid.Column="9" Width="32" Height="32" ToolTip="Filters">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                             <Style.Triggers>
@@ -209,7 +222,7 @@
                 </Button>
 
                 <!-- View mode toggle (Details ↔ Thumbnails) -->
-                <Button Grid.Column="9" Width="32" Height="32" ToolTip="Toggle view (Details / Thumbnails)"
+                <Button Grid.Column="10" Width="32" Height="32" ToolTip="Toggle view (Details / Thumbnails)"
                         Command="{Binding ActiveTab.ToggleViewModeCommand}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -224,7 +237,7 @@
                 </Button>
 
                 <!-- Preview pane toggle -->
-                <Button Grid.Column="10" Width="32" Height="32" ToolTip="Preview pane"
+                <Button Grid.Column="11" Width="32" Height="32" ToolTip="Preview pane"
                         Command="{Binding ActiveTab.TogglePreviewPaneCommand}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">

@@ -35,6 +35,15 @@ public partial class FilePane : UserControl
             new RoutedEventHandler(ColumnHeader_Click));
         Loaded   += OnLoaded;
         Unloaded += OnUnloaded;
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.C &&
+                e.KeyboardDevice.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+            {
+                CopyCurrentPath();
+                e.Handled = true;
+            }
+        };
         // Only re-size when the pane width changes (not when a scrollbar appears/disappears)
         FileList.SizeChanged += (_, e) =>
         {
@@ -162,6 +171,28 @@ public partial class FilePane : UserControl
             AddressBox.Focus();
             AddressBox.SelectAll();
         }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    /// <summary>Deep paths overflow the crumb strip — keep the current folder visible.</summary>
+    private void BreadcrumbItems_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (e.WidthChanged) BreadcrumbScroller.ScrollToRightEnd();
+    }
+
+    private void BreadcrumbScroller_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        BreadcrumbScroller.ScrollToHorizontalOffset(
+            BreadcrumbScroller.HorizontalOffset - e.Delta);
+        e.Handled = true;
+    }
+
+    private void CopyPathButton_Click(object sender, RoutedEventArgs e) => CopyCurrentPath();
+
+    /// <summary>Copies the whole path — the address bar only ever shows part of a deep one.</summary>
+    public void CopyCurrentPath()
+    {
+        if (Tab is not { CurrentPath: { Length: > 0 } path }) return;
+        try { Clipboard.SetText(path); } catch { /* clipboard busy */ }
     }
 
     private void AddressBarOutsideClick(object sender, MouseButtonEventArgs e)
