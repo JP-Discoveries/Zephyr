@@ -53,11 +53,17 @@ public class FileItem : INotifyPropertyChanged
 
     // Controlled by Settings.ShowFileExtensions; set statically so all items react together
     public static bool ShowExtensions { get; set; } = true;
+    // Shortcut extensions are always hidden, matching Explorer's NeverShowExt behavior
+    public bool IsShortcut => !IsDirectory &&
+        (Extension.Equals(".lnk", StringComparison.OrdinalIgnoreCase) ||
+         Extension.Equals(".url", StringComparison.OrdinalIgnoreCase));
+
     public string DisplayName
     {
         get
         {
-            if (ShowExtensions || IsDirectory || string.IsNullOrEmpty(Extension)) return Name;
+            if (IsDirectory || string.IsNullOrEmpty(Extension)) return Name;
+            if (ShowExtensions && !IsShortcut) return Name;
             var stripped = Name[..^Extension.Length];
             return stripped.Length > 0 ? stripped : Name;
         }
@@ -200,5 +206,6 @@ public class FileItem : INotifyPropertyChanged
         : ByteSize.Format(Size);
     public string TypeDisplay => IsDirectory
         ? "Folder"
+        : IsShortcut ? "Shortcut"
         : string.IsNullOrEmpty(Extension) ? "File" : $"{Extension.TrimStart('.').ToUpper()} File";
 }

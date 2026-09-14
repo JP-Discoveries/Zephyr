@@ -38,6 +38,7 @@ public static class ShellIconService
 
     private const uint SHGFI_ICON             = 0x000000100;
     private const uint SHGFI_SMALLICON        = 0x000000001;
+    private const uint SHGFI_LINKOVERLAY      = 0x000008000;
     private const uint SHGFI_SYSICONINDEX     = 0x000004000;
     private const uint SHGFI_USEFILEATTRIBUTES = 0x000000010;
     private const uint FILE_ATTRIBUTE_NORMAL  = 0x00000080;
@@ -71,8 +72,9 @@ public static class ShellIconService
         if (string.IsNullOrEmpty(path)) return string.Empty;
         if (isDirectory) return "DIR:" + (IsSynthetic(path) ? "GENERIC" : path.ToUpperInvariant());
         string ext = ResolveExt(path, extOverride);
-        // Per-file embedded icons for real executables and icon files
-        return !IsSynthetic(path) && ext is ".exe" or ".dll" or ".ico"
+        // Per-file embedded icons for real executables, icon files, and shortcuts
+        // (.lnk/.url icons come from the shortcut's target, not the extension)
+        return !IsSynthetic(path) && ext is ".exe" or ".dll" or ".ico" or ".lnk" or ".url"
             ? path.ToUpperInvariant()
             : ext.Length > 0 ? ext : "NOEXT";
     }
@@ -105,10 +107,11 @@ public static class ShellIconService
             else
             {
                 string ext = ResolveExt(path, extOverride);
-                if (!IsSynthetic(path) && ext is ".exe" or ".dll" or ".ico")
+                if (!IsSynthetic(path) && ext is ".exe" or ".dll" or ".ico" or ".lnk" or ".url")
                 {
                     queryPath = path;
                     fileAttr = FILE_ATTRIBUTE_NORMAL;
+                    if (ext is ".lnk" or ".url") flags |= SHGFI_LINKOVERLAY;
                 }
                 else
                 {
