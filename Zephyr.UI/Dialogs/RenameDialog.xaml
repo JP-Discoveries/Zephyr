@@ -1,0 +1,66 @@
+<Window x:Class="Zephyr.UI.Dialogs.RenameDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Rename" Width="420" SizeToContent="Height"
+        Icon="{StaticResource ZephyrAppIcon}"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize" ShowInTaskbar="False"
+        Background="{DynamicResource ZephyrSurface}">
+    <Grid Margin="18,14,18,14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Name:"
+                       Foreground="{DynamicResource ZephyrTextPrimary}"
+                       FontSize="13"/>
+            <TextBlock x:Name="ExtLabel" Grid.Column="2" Text="Extension:"
+                       Width="110" Margin="8,0,0,0"
+                       Foreground="{DynamicResource ZephyrTextPrimary}"
+                       FontSize="13"/>
+        </Grid>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="NameBox" Grid.Column="0"
+                     FontSize="13" Padding="6,4"
+                     Background="{DynamicResource ZephyrElevated}"
+                     Foreground="{DynamicResource ZephyrTextPrimary}"
+                     BorderBrush="{DynamicResource ZephyrBorder}"
+                     KeyDown="Box_KeyDown"/>
+
+            <TextBlock x:Name="DotLabel" Grid.Column="1" Text="."
+                       Margin="4,0,4,0" VerticalAlignment="Center"
+                       Foreground="{DynamicResource ZephyrTextSecondary}"
+                       FontSize="13"/>
+
+            <TextBox x:Name="ExtBox" Grid.Column="2"
+                     Width="110"
+                     FontSize="13" Padding="6,4"
+                     Background="{DynamicResource ZephyrElevated}"
+                     Foreground="{DynamicResource ZephyrTextPrimary}"
+                     BorderBrush="{DynamicResource ZephyrBorder}"
+                     KeyDown="Box_KeyDown"/>
+        </Grid>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel" Width="75" Margin="0,0,8,0" Click="Cancel_Click"/>
+            <Button Content="OK" Width="75" IsDefault="True" Click="OK_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

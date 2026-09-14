@@ -186,16 +186,10 @@ public partial class MainViewModel
     private void Rename()
     {
         if (ActiveTab?.SelectedItem is not { } item) return;
-        var dlg = new InputDialog("Rename", "New name:", item.Name)
+        var dlg = new RenameDialog(item.Name, item.IsDirectory)
             { Owner = Application.Current.MainWindow };
         if (dlg.ShowDialog() != true) return;
         var result = dlg.Result;
-        if (!item.IsDirectory)
-        {
-            var origExt = Path.GetExtension(item.Name);
-            if (!string.IsNullOrEmpty(origExt) && string.IsNullOrEmpty(Path.GetExtension(result)))
-                result += origExt;
-        }
         var newPath = Path.Combine(Path.GetDirectoryName(item.FullPath)!, result);
         if (!string.Equals(item.FullPath, newPath, StringComparison.OrdinalIgnoreCase) &&
             (File.Exists(newPath) || Directory.Exists(newPath)))
