@@ -12,7 +12,8 @@ public partial class BatchRenameDialog : Window
     private readonly List<string> _paths;
     public  List<(string OldPath, string NewName)> Results { get; private set; } = [];
 
-    private record PreviewRow(string Original, string NewName);
+    // Must be public — WPF data binding cannot reflect over non-public types.
+    public record PreviewRow(string Original, string NewName);
 
     public BatchRenameDialog(IEnumerable<string> paths)
     {

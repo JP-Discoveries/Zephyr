@@ -106,7 +106,8 @@
                       BorderThickness="1" BorderBrush="{DynamicResource ZephyrBorder}"
                       Background="{DynamicResource ZephyrElevated}"
                       Foreground="{DynamicResource ZephyrTextPrimary}"
-                      FontSize="12">
+                      FontSize="12"
+                      ItemContainerStyle="{StaticResource GridViewItemStyle}">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Original" Width="260" DisplayMemberBinding="{Binding Original}"/>
