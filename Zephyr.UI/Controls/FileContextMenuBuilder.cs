@@ -34,7 +34,9 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
         var sepStyle = (Style)_owner.FindResource("MenuSep");
         var menu     = new ContextMenu { HorizontalContentAlignment = HorizontalAlignment.Stretch };
 
-        var filterItems = new List<(MenuItem mi, string label)>();
+        // hidden == search-only: kept out of the default menu to keep it condensed, but
+        // still reachable by typing in the search bar.
+        var filterItems = new List<(MenuItem mi, string label, bool hidden)>();
         var sepList     = new List<Separator>();
         MenuItem? labelRow = null;
 
@@ -71,7 +73,7 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
         // Placeholder (overlaid on input column, behind TextBox)
         var placeholder = new TextBlock
         {
-            Text              = "Search actions…",
+            Text              = "Search all actions…",
             FontSize          = 13,
             Margin            = new Thickness(3, 0, 0, 0),
             VerticalAlignment = VerticalAlignment.Center,
@@ -147,11 +149,15 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
             return s;
         }
 
-        void Add(MenuItem mi, string label)
+        void Add(MenuItem mi, string label, bool hidden = false)
         {
-            filterItems.Add((mi, label.ToLowerInvariant()));
+            filterItems.Add((mi, label.ToLowerInvariant(), hidden));
+            if (hidden) mi.Visibility = Visibility.Collapsed;
             menu.Items.Add(mi);
         }
+
+        // Search-only variant: absent from the default menu, surfaced by the search box.
+        void AddHidden(MenuItem mi, string label) => Add(mi, label, hidden: true);
 
         // ── Primary actions ───────────────────────────────────────────────────
         bool inArchive = tab.IsArchiveView; // browsing inside an archive → read-only menu
@@ -294,7 +300,7 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
                 tab.Reload();
             }), "extract archive unzip zip 7z rar tar gz bz2 xz");
 
-            Add(MakeMenuItem("Test Archive", () =>
+            AddHidden(MakeMenuItem("Test Archive", () =>
             {
                 _ = RunArchiveAsync(async () =>
                 {
@@ -324,20 +330,20 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
         AddSep();
 
         // ── Clipboard operations ──────────────────────────────────────────────
+        // Cut/Copy/Paste are search-only: the toolbar buttons and Ctrl+X/C/V cover them.
         if (vm != null)
         {
-            Add(MakeMenuItem("Cut",    () => vm.CutCommand.Execute(null),   "Ctrl+X"), "cut move");
-            Add(MakeMenuItem("Copy",   () => vm.CopyCommand.Execute(null),  "Ctrl+C"), "copy");
-            Add(MakeMenuItem("Paste",  () => vm.PasteCommand.Execute(null), "Ctrl+V",
+            AddHidden(MakeMenuItem("Cut",   () => vm.CutCommand.Execute(null),  "Ctrl+X"), "cut move");
+            AddHidden(MakeMenuItem("Copy",  () => vm.CopyCommand.Execute(null), "Ctrl+C"), "copy");
+            AddHidden(MakeMenuItem("Paste", () => vm.PasteCommand.Execute(null), "Ctrl+V",
                 enabled: ClipboardService.HasFiles()), "paste");
-            AddSep();
             Add(MakeMenuItem("Rename", () => vm.RenameCommand.Execute(null), "F2"),    "rename");
             Add(MakeMenuItem("Delete", () => vm.DeleteCommand.Execute(null), "Del"),   "delete remove trash");
 
             var duplicateSources = tab.SelectedItems.Count > 0
                 ? tab.SelectedItems.Select(i => i.FullPath)
                 : [item.FullPath];
-            Add(MakeMenuItem("Create Copy", () => _ = tab.DuplicateAsync(duplicateSources)), "create copy duplicate");
+            AddHidden(MakeMenuItem("Create Copy", () => _ = tab.DuplicateAsync(duplicateSources)), "create copy duplicate");
         }
 
         AddSep();
@@ -345,13 +351,13 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
         // ── Shell utilities ───────────────────────────────────────────────────
         Add(MakeMenuItem("Copy Path", () => Clipboard.SetText(item.FullPath)), "copy path location");
 
-        Add(MakeMenuItem("Create Shortcut", () =>
+        AddHidden(MakeMenuItem("Create Shortcut", () =>
         {
             try   { ShellIntegrationService.CreateShortcut(item.FullPath, itemDir); tab.Reload(); }
             catch (Exception ex) { ShowError(ex.Message); }
         }), "create shortcut link lnk");
 
-        Add(MakeMenuItem("Create Link…", () =>
+        AddHidden(MakeMenuItem("Create Link…", () =>
         {
             var dlg = new Zephyr.UI.Dialogs.CreateLinkDialog(item.FullPath)
                 { Owner = Window.GetWindow(_owner) };
@@ -370,12 +376,24 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
             }
         }), "create link symbolic junction hardlink hard symlink");
 
-        if (!item.IsDirectory)
-            Add(MakeMenuItem("Pin to Start",
-                () => ShellIntegrationService.PinToStart(item.FullPath)), "pin start menu");
+        // Not "Pin to Start": Windows blocks the pin verb outside the shell, so the honest
+        // action is an All apps entry the user can then pin in one right-click.
+        AddHidden(MakeMenuItem("Add to Start Menu", () =>
+        {
+            try
+            {
+                ShellIntegrationService.AddToStartMenu(item.FullPath);
+                ZephyrMessageBox.Show(
+                    $"\"{item.Name}\" now appears under Start ▸ All apps.\n\n" +
+                    "Windows only lets the shell itself pin to Start, so right-click it there " +
+                    "and choose Pin to Start to put it on the pinned grid.",
+                    "Add to Start Menu");
+            }
+            catch (Exception ex) { ShowError(ex.Message); }
+        }), "pin start menu all apps shortcut");
 
         if (!item.IsDirectory)
-            Add(MakeMenuItem("Checksum…", () =>
+            AddHidden(MakeMenuItem("Checksum…", () =>
             {
                 var win = new Zephyr.UI.Dialogs.ChecksumWindow(item.FullPath)
                     { Owner = Window.GetWindow(_owner) };
@@ -461,7 +479,7 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
         }
 
         AddSep();
-        Add(MakeMenuItem("Attributes & Timestamps…", () =>
+        AddHidden(MakeMenuItem("Attributes & Timestamps…", () =>
         {
             var targets = (tab.SelectedItems.Count > 0 ? tab.SelectedItems : [item])
                 .Select(i => i.FullPath).ToList();
@@ -488,15 +506,17 @@ internal sealed class FileContextMenuBuilder(FrameworkElement owner)
             var q = searchBox.Text.Trim().ToLowerInvariant();
             if (string.IsNullOrEmpty(q))
             {
-                foreach (var (mi, _) in filterItems) mi.Visibility = Visibility.Visible;
-                foreach (var s in sepList)           s.Visibility  = Visibility.Visible;
+                // Back to the condensed menu: search-only items collapse again.
+                foreach (var (mi, _, hidden) in filterItems)
+                    mi.Visibility = hidden ? Visibility.Collapsed : Visibility.Visible;
+                foreach (var s in sepList) s.Visibility = Visibility.Visible;
                 if (labelRow != null) labelRow.Visibility = Visibility.Visible;
                 return;
             }
             // Hide separators (and the colour-label row) while searching so results render flat
             foreach (var s in sepList) s.Visibility = Visibility.Collapsed;
             if (labelRow != null) labelRow.Visibility = Visibility.Collapsed;
-            foreach (var (mi, label) in filterItems)
+            foreach (var (mi, label, _) in filterItems)
                 mi.Visibility = label.Contains(q) ? Visibility.Visible : Visibility.Collapsed;
         };
 

@@ -251,21 +251,36 @@ $h = New-Object ZephyrHotkeyHelper -ArgumentList @('{safeExe}', $stop)
         shortcut.Save();
     }
 
-    public static void PinToStart(string path)
+    /// <summary>
+    /// Places (or replaces) a shortcut to <paramref name="path"/> in the user's Start Menu,
+    /// making it appear under Start ▸ All apps. Returns the shortcut path.
+    /// </summary>
+    /// <remarks>
+    /// This is deliberately not a true pin. Windows 10 1803 and later reject the
+    /// "pintostartscreen" verb from any process that is not the shell itself — measured on
+    /// Win11 25H2, ShellExecuteEx returns ERROR_NO_ASSOCIATION (1155) and the equivalent
+    /// IContextMenu invocation returns E_ACCESSDENIED. The only ways to write the pinned grid
+    /// are rewriting the undocumented start2.bin (which StartMenuExperienceHost rewrites from
+    /// memory on exit, risking the user's whole layout) or the ConfigureStartPins MDM policy,
+    /// which replaces the entire layout. An All apps entry is the supported alternative; the
+    /// user can pin it from there in one right-click.
+    /// </remarks>
+    public static string AddToStartMenu(string path)
     {
-        try
-        {
-            var sei = new SHELLEXECUTEINFO
-            {
-                cbSize = Marshal.SizeOf<SHELLEXECUTEINFO>(),
-                fMask  = 0x0C,
-                lpVerb = "pintostartscreen",
-                lpFile = path,
-                nShow  = 0,
-            };
-            ShellExecuteExW(ref sei);
-        }
-        catch { }
+        var programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
+        Directory.CreateDirectory(programs);
+
+        var lnk = Path.Combine(programs, Path.GetFileNameWithoutExtension(path) + ".lnk");
+
+        var shellType = Type.GetTypeFromProgID("WScript.Shell")
+            ?? throw new InvalidOperationException("WScript.Shell COM object not available.");
+        dynamic shell    = Activator.CreateInstance(shellType)!;
+        var     shortcut = shell.CreateShortcut(lnk);
+        shortcut.TargetPath       = path;
+        shortcut.WorkingDirectory = Path.GetDirectoryName(path) ?? "";
+        shortcut.Description      = Path.GetFileName(path);
+        shortcut.Save();
+        return lnk;
     }
 
     public static void ShowProperties(string path)
