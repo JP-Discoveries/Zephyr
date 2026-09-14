@@ -174,12 +174,15 @@ public partial class MainWindow : Window
         ApplyDarkTitleBar();
         HwndSource.FromHwnd(new WindowInteropHelper(this).Handle)?.AddHook(WndProc);
         UpdateWinECapture(SettingsService.Current.CaptureWinE);
+        // Cold launch from the Win+E helper / IFEO redirect: Start is still up over us.
+        StartMenuInterop.DismissIfOpen();
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         if (msg == WM_HOTKEY && wParam.ToInt32() == HOTKEY_WIN_E)
         {
+            StartMenuInterop.DismissIfOpen();
             if (WindowState == WindowState.Minimized)
                 WindowState = WindowState.Normal;
             Show();

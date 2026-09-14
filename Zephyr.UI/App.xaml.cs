@@ -45,6 +45,7 @@ public partial class App : Application
                     .FirstOrDefault(p => p.Id != me.Id);
                 if (other != null)
                 {
+                    StartMenuInterop.DismissIfOpen();
                     ShowWindow(other.MainWindowHandle, 9); // SW_RESTORE
                     SetForegroundWindow(other.MainWindowHandle);
                 }
