@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
+using Zephyr.Core.Archives;
 using Zephyr.Core.Settings;
 using Zephyr.UI.Dialogs;
 using Zephyr.UI.Services;
@@ -51,8 +52,55 @@ public partial class MainViewModel
         Reg("settings",     "Settings",        "", OpenSettingsCommand,"Ctrl+OemComma",toolbar: true, defaultOnToolbar: true);
 
         // Hotkey-only commands.
+        Reg("properties",   "Properties",    "", ShowPropertiesCommand,  "Alt+Return");
+        Reg("refresh",      "Refresh",       "", RefreshViewCommand,     "F5");
+        Reg("close-tab",    "Close Tab",     "", CloseActiveTabCommand,  "Ctrl+W");
+        Reg("focus-search", "Focus Search",  "", FocusSearchCommand,     "Ctrl+F");
+        Reg("nav-back",     "Back",          "", NavigateBackCommand,    "Alt+Left");
+        Reg("nav-forward",  "Forward",       "", NavigateForwardCommand, "Alt+Right");
+        Reg("nav-up",       "Up One Level",  "", NavigateUpCommand,      "Alt+Up");
         Reg("delete-permanent", "Delete Permanently", "", PermanentDeleteCommand,  "Shift+Delete");
         Reg("command-palette",  "Command Palette",    "", OpenCommandPaletteCommand, "Ctrl+P");
+    }
+
+    // ── Shortcut-only actions ─────────────────────────────────────────────────
+    // Thin wrappers so tab/pane-scoped operations can be bound at the window level
+    // (and rebound from Settings) without the hotkey layer knowing about panes.
+
+    [RelayCommand]
+    private void ShowProperties()
+    {
+        if (ActiveTab is not { } tab) return;
+        var path = tab.SelectedItem?.FullPath ?? tab.CurrentPath;
+        if (string.IsNullOrEmpty(path)) return;
+        // Virtual paths have no file-system identity to describe.
+        if (ArchivePath.IsArchivePath(path) || WpdProvider.IsWpdPath(path)) return;
+
+        new FilePropertiesWindow(path) { Owner = Application.Current.MainWindow }.ShowDialog();
+    }
+
+    [RelayCommand]
+    private void RefreshView() => ActiveTab?.Reload();
+
+    [RelayCommand]
+    private void CloseActiveTab()
+    {
+        if (ActivePane.ActiveTab is { } tab) ActivePane.CloseTabCommand.Execute(tab);
+    }
+
+    [RelayCommand]
+    private void FocusSearch()
+    {
+        if (Application.Current.MainWindow is MainWindow mw) mw.FocusActiveSearchBox();
+    }
+
+    [RelayCommand] private void NavigateBack()    => Invoke(ActiveTab?.GoBackCommand);
+    [RelayCommand] private void NavigateForward() => Invoke(ActiveTab?.GoForwardCommand);
+    [RelayCommand] private void NavigateUp()      => Invoke(ActiveTab?.GoUpCommand);
+
+    private static void Invoke(IRelayCommand? cmd)
+    {
+        if (cmd?.CanExecute(null) == true) cmd.Execute(null);
     }
 
     public void RebuildToolbar()
@@ -131,6 +179,8 @@ public partial class MainViewModel
             Cmd("Batch Rename",       "", BatchRenameCommand),
             Cmd("Toggle Split View",  "", ToggleSplitViewCommand),
             Cmd("Toggle Sidebar",     "", ToggleSidebarCommand,     "Ctrl+B"),
+            Cmd("Properties",         "", ShowPropertiesCommand,    "Alt+Enter"),
+            Cmd("Refresh",            "", RefreshViewCommand,       "F5"),
             Cmd("Settings",           "", OpenSettingsCommand,      "Ctrl+,"),
         };
 

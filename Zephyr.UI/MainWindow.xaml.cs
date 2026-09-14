@@ -10,6 +10,7 @@ using System.Windows.Media.Animation;
 using Zephyr.Core.FileSystem;
 using Zephyr.Core.Models;
 using Zephyr.Core.Settings;
+using Zephyr.UI.Controls;
 using Zephyr.UI.Dialogs;
 using Zephyr.UI.Services;
 using Zephyr.UI.ViewModels;
@@ -69,6 +70,23 @@ public partial class MainWindow : Window
         foreach (var cmd in vm.AppCommands)
             if (HotkeyService.TryParse(HotkeyService.EffectiveGesture(cmd), out var key, out var mods))
                 InputBindings.Add(new KeyBinding(cmd.Command, key, mods));
+    }
+
+    /// <summary>Moves focus to the search box of whichever pane is currently active.</summary>
+    public void FocusActiveSearchBox()
+    {
+        if (VM is not { } vm) return;
+        var host = vm.IsSplitView && vm.ActivePane == vm.RightPane ? RightPaneBorder : LeftPaneBorder;
+        FindPane(host)?.FocusSearchBox();
+    }
+
+    private static FilePane? FindPane(DependencyObject? root)
+    {
+        if (root is null) return null;
+        if (root is FilePane pane) return pane;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            if (FindPane(VisualTreeHelper.GetChild(root, i)) is { } found) return found;
+        return null;
     }
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)

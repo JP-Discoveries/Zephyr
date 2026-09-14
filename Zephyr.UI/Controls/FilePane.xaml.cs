@@ -273,6 +273,14 @@ public partial class FilePane : UserControl
     }
 
     // ── Search ─────────────────────────────────────────────────────────────
+
+    /// <summary>Puts the caret in this pane's search box and selects whatever is there.</summary>
+    public void FocusSearchBox()
+    {
+        BottomSearchBox.Focus();
+        BottomSearchBox.SelectAll();
+    }
+
     private void SearchBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (Tab is not { } tab) return;
