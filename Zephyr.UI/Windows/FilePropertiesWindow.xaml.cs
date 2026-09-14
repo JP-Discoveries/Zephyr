@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using Zephyr.UI.Services;
 
 namespace Zephyr.UI.Windows;
 
@@ -71,6 +72,64 @@ public partial class FilePropertiesWindow : Window
             AccessedText.Text = fi.LastAccessTime.ToString("dddd, MMMM d, yyyy,  h:mm:ss tt");
             ReadOnlyCheck.IsChecked = fi.Attributes.HasFlag(FileAttributes.ReadOnly);
             HiddenCheck.IsChecked   = fi.Attributes.HasFlag(FileAttributes.Hidden);
+            LoadOpensWith();
+        }
+    }
+
+    // ── "Opens with" row ──────────────────────────────────────────────────────
+
+    private void LoadOpensWith()
+    {
+        if (!DefaultAppService.CanChange(_path)) return;
+
+        OpensWithLabel.Visibility = Visibility.Visible;
+        OpensWithRow.Visibility   = Visibility.Visible;
+        RefreshOpensWith();
+    }
+
+    private void RefreshOpensWith()
+    {
+        var name = DefaultAppService.GetFriendlyName(_path);
+        OpensWithText.Text = string.IsNullOrWhiteSpace(name) ? "(no default app)" : name;
+
+        OpensWithIcon.Source     = null;
+        OpensWithIcon.Visibility = Visibility.Collapsed;
+
+        var exe = DefaultAppService.GetExecutablePath(_path);
+        if (exe == null) return;
+
+        var large = new IntPtr[1];
+        var small = new IntPtr[1];
+        try
+        {
+            if (ExtractIconEx(exe, 0, large, small, 1) > 0 && small[0] != IntPtr.Zero)
+            {
+                OpensWithIcon.Source = Imaging.CreateBitmapSourceFromHIcon(
+                    small[0], Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                OpensWithIcon.Visibility = Visibility.Visible;
+            }
+        }
+        catch { }
+        finally
+        {
+            if (large[0] != IntPtr.Zero) DestroyIcon(large[0]);
+            if (small[0] != IntPtr.Zero) DestroyIcon(small[0]);
+        }
+    }
+
+    private void ChangeDefaultApp_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (!DefaultAppService.ChangeDefault(hwnd, _path)) return;   // user cancelled
+
+            RefreshOpensWith();
+            SHChangeNotify(0x08000000, 0x0000, IntPtr.Zero, IntPtr.Zero); // SHCNE_ASSOCCHANGED
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Open With", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 

@@ -49,6 +49,8 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="5"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="14"/>
                                 <RowDefinition Height="Auto"/>
@@ -61,23 +63,42 @@
                             <TextBlock Grid.Row="0"  Grid.Column="0" Text="Type:"     FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
                             <TextBlock Grid.Row="0"  Grid.Column="1" x:Name="TypeText"     FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
 
-                            <TextBlock Grid.Row="2"  Grid.Column="0" Text="Location:" FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
-                            <TextBlock Grid.Row="2"  Grid.Column="1" x:Name="LocationText" FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
+                            <!-- Default app for this file's extension (files only) -->
+                            <TextBlock Grid.Row="2"  Grid.Column="0" x:Name="OpensWithLabel" Text="Opens with:" FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Center" Visibility="Collapsed"/>
+                            <Grid Grid.Row="2" Grid.Column="1" x:Name="OpensWithRow" Visibility="Collapsed">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Image x:Name="OpensWithIcon" Width="16" Height="16" Stretch="Uniform"
+                                           Margin="0,0,6,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                                    <TextBlock x:Name="OpensWithText" FontSize="13"
+                                               Foreground="{DynamicResource ZephyrTextPrimary}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Change…" Padding="10,3" MinWidth="76"
+                                        Margin="8,0,0,0" VerticalAlignment="Center"
+                                        Click="ChangeDefaultApp_Click"/>
+                            </Grid>
 
-                            <TextBlock Grid.Row="4"  Grid.Column="0" Text="Size:"     FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
-                            <TextBlock Grid.Row="4"  Grid.Column="1" x:Name="SizeText"     FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
+                            <TextBlock Grid.Row="4"  Grid.Column="0" Text="Location:" FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
+                            <TextBlock Grid.Row="4"  Grid.Column="1" x:Name="LocationText" FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
 
-                            <TextBlock Grid.Row="5"  Grid.Column="0" x:Name="ContainsLabel" Text="Contains:" FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top" Visibility="Collapsed" Margin="0,4,0,0"/>
-                            <TextBlock Grid.Row="5"  Grid.Column="1" x:Name="ContainsText"  FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,4,0,0"/>
+                            <TextBlock Grid.Row="6"  Grid.Column="0" Text="Size:"     FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
+                            <TextBlock Grid.Row="6"  Grid.Column="1" x:Name="SizeText"     FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
 
-                            <TextBlock Grid.Row="7"  Grid.Column="0" Text="Created:"  FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
-                            <TextBlock Grid.Row="7"  Grid.Column="1" x:Name="CreatedText"   FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
+                            <TextBlock Grid.Row="7"  Grid.Column="0" x:Name="ContainsLabel" Text="Contains:" FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top" Visibility="Collapsed" Margin="0,4,0,0"/>
+                            <TextBlock Grid.Row="7"  Grid.Column="1" x:Name="ContainsText"  FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,4,0,0"/>
 
-                            <TextBlock Grid.Row="9"  Grid.Column="0" Text="Modified:" FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
-                            <TextBlock Grid.Row="9"  Grid.Column="1" x:Name="ModifiedText"  FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
+                            <TextBlock Grid.Row="9"  Grid.Column="0" Text="Created:"  FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
+                            <TextBlock Grid.Row="9"  Grid.Column="1" x:Name="CreatedText"   FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
 
-                            <TextBlock Grid.Row="11" Grid.Column="0" Text="Accessed:" FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
-                            <TextBlock Grid.Row="11" Grid.Column="1" x:Name="AccessedText"  FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
+                            <TextBlock Grid.Row="11" Grid.Column="0" Text="Modified:" FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
+                            <TextBlock Grid.Row="11" Grid.Column="1" x:Name="ModifiedText"  FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
+
+                            <TextBlock Grid.Row="13" Grid.Column="0" Text="Accessed:" FontSize="13" Foreground="{DynamicResource ZephyrTextSecondary}" VerticalAlignment="Top"/>
+                            <TextBlock Grid.Row="13" Grid.Column="1" x:Name="AccessedText"  FontSize="13" Foreground="{DynamicResource ZephyrTextPrimary}" TextWrapping="Wrap"/>
                         </Grid>
 
                         <Rectangle Height="1" Fill="{DynamicResource ZephyrBorder}" Margin="0,14,0,12"/>
@@ -270,7 +291,8 @@
             <Rectangle Grid.Row="0" Fill="{DynamicResource ZephyrBorder}"/>
             <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right"
                         Margin="16,10,16,12">
-                <Button Content="OK"     Width="80" Margin="0,0,8,0" Click="OK_Click"/>
+                <Button Content="OK"     Width="80" Margin="0,0,8,0" Click="OK_Click"
+                        Style="{StaticResource AccentButton}"/>
                 <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click"/>
                 <Button Content="Apply"  Width="80" Click="Apply_Click"/>
             </StackPanel>
