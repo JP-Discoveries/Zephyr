@@ -32,8 +32,35 @@
                 BorderThickness="0,0,0,1"
                 PreviewMouseLeftButtonDown="TabBar_PreviewMouseDown"
                 PreviewMouseMove="TabBar_PreviewMouseMove"
-                LostMouseCapture="TabBar_LostCapture">
-            <StackPanel Orientation="Horizontal">
+                LostMouseCapture="TabBar_LostCapture"
+                PreviewMouseWheel="TabBar_PreviewMouseWheel">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>  <!-- Scroll left -->
+                    <ColumnDefinition Width="*"/>     <!-- Tab strip + scroll right + new tab -->
+                    <ColumnDefinition Width="Auto"/>  <!-- Tab list -->
+                </Grid.ColumnDefinitions>
+
+                <Button x:Name="TabScrollLeft" Grid.Column="0" Width="30" Padding="0" VerticalAlignment="Stretch"
+                        Visibility="Collapsed" ToolTip="Scroll tabs left"
+                        Click="TabScrollLeft_Click">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE76B;" FontSize="14"
+                               Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                </Button>
+
+                <!-- Left-aligned so the strip only takes the width its tabs need, keeping the
+                     + button beside the last tab; the * column caps it once tabs overflow. -->
+                <Grid Grid.Column="1" HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>     <!-- Tab strip -->
+                    <ColumnDefinition Width="Auto"/>  <!-- Scroll right -->
+                    <ColumnDefinition Width="Auto"/>  <!-- New tab -->
+                </Grid.ColumnDefinitions>
+
+                <ScrollViewer x:Name="TabScroll" Grid.Column="0"
+                              HorizontalScrollBarVisibility="Hidden"
+                              VerticalScrollBarVisibility="Disabled"
+                              ScrollChanged="TabScroll_ScrollChanged">
                 <ItemsControl x:Name="TabStrip" ItemsSource="{Binding Tabs}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -90,12 +117,70 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Button Width="36" VerticalAlignment="Stretch"
+                </ScrollViewer>
+
+                <Button x:Name="TabScrollRight" Grid.Column="1" Width="30" Padding="0" VerticalAlignment="Stretch"
+                        Visibility="Collapsed" ToolTip="Scroll tabs right"
+                        Click="TabScrollRight_Click">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE76C;" FontSize="14"
+                               Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                </Button>
+
+                <Button Grid.Column="2" Width="36" VerticalAlignment="Stretch"
                         Command="{Binding NewTabCommand}" ToolTip="New Tab (Ctrl+T)">
                     <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE710;" FontSize="12"
                                Foreground="{DynamicResource ZephyrTextSecondary}"/>
                 </Button>
-            </StackPanel>
+                </Grid>
+
+                <!-- Full tab list: the reliable way to reach any tab once the strip overflows -->
+                <Button x:Name="TabListButton" Grid.Column="2" Width="30" Padding="0" VerticalAlignment="Stretch"
+                        Visibility="Collapsed" ToolTip="All tabs"
+                        Click="TabListButton_Click">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE70D;" FontSize="13"
+                               Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                </Button>
+
+                <Popup x:Name="TabListPopup" PlacementTarget="{Binding ElementName=TabListButton}"
+                       Placement="Bottom" StaysOpen="False" AllowsTransparency="True"
+                       HorizontalOffset="-244" VerticalOffset="2">
+                    <Border Background="{DynamicResource ZephyrSurface}"
+                            BorderBrush="{DynamicResource ZephyrBorder}"
+                            BorderThickness="1" CornerRadius="6" Padding="4"
+                            MaxHeight="420">
+                        <ListBox x:Name="TabListBox" ItemsSource="{Binding Tabs}"
+                                 Background="Transparent" BorderThickness="0"
+                                 SelectionChanged="TabList_SelectionChanged"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:TabViewModel}">
+                                    <Grid Width="240">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Header}" FontSize="13"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{DynamicResource ZephyrTextPrimary}"/>
+                                            <TextBlock Text="{Binding CurrentPath}" FontSize="11"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Padding="4,2" Opacity="0.7"
+                                                ToolTip="Close Tab"
+                                                Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                CommandParameter="{Binding}">
+                                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE711;"
+                                                       FontSize="10" Foreground="{DynamicResource ZephyrTextSecondary}"/>
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Border>
+                </Popup>
+            </Grid>
         </Border>
 
         <!-- ── Navigation Bar ───────────────────────────────────────────── -->

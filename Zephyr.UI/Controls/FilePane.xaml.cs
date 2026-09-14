@@ -72,6 +72,8 @@ public partial class FilePane : UserControl
         }
         AutoSizeColumns();
         SubscribeColumnWidths();
+        UpdateTabOverflowChrome();
+        EnsureActiveTabVisible();
         Dispatcher.InvokeAsync(SyncHeaderBand, DispatcherPriority.Loaded);
     }
 
@@ -107,6 +109,7 @@ public partial class FilePane : UserControl
             tab.Items.CollectionChanged += OnItemsChanged;
             if (IsLoaded && ActualWidth > 10)
                 tab.SetPaneWidth(ActualWidth);
+            EnsureActiveTabVisible();
         }
         Dispatcher.InvokeAsync(AutoSizeColumns, DispatcherPriority.Background);
     }
