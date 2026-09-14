@@ -11,6 +11,12 @@
 
     <!-- Primary shortcuts are built dynamically from the command registry (see ApplyHotkeys);
          these two are fixed extras. -->
+    <Window.Resources>
+        <!-- Window chrome (toolbar, sidebar, transfer panel) stays flat —
+             the framed button look is for dialogs and settings. -->
+        <Style TargetType="Button" BasedOn="{StaticResource IconButton}"/>
+    </Window.Resources>
+
     <Window.InputBindings>
         <KeyBinding Key="Escape"                    Command="{Binding ClearClipboardCommand}"/>
         <KeyBinding Key="P" Modifiers="Ctrl+Shift"  Command="{Binding OpenCommandPaletteCommand}"/>

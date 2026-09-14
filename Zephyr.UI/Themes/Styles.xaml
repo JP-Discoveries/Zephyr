@@ -14,8 +14,8 @@
     <converters:CompareStatusToBrushConverter     x:Key="CompareStatusToBrush"/>
     <converters:ScaleWithMinConverter             x:Key="ScaleWithMin"/>
 
-    <!-- ── Button ──────────────────────────────────────────────────────── -->
-    <Style TargetType="Button">
+    <!-- ── Icon / chrome button (flat, no surface until hovered) ───────── -->
+    <Style x:Key="IconButton" TargetType="Button">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource ZephyrTextPrimary}"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
@@ -44,6 +44,110 @@
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Foreground" Value="{DynamicResource ZephyrTextDisabled}"/>
+                            <Setter Property="Cursor" Value="Arrow"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── Button (default: visible surface so it reads as clickable) ──── -->
+    <Style TargetType="Button">
+        <Setter Property="Background" Value="{DynamicResource ZephyrElevated}"/>
+        <Setter Property="Foreground" Value="{DynamicResource ZephyrTextPrimary}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ZephyrBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="5"
+                            SnapsToDevicePixels="True"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background"  Value="{DynamicResource ZephyrHover}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource ZephyrAccent}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ZephyrPressed}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource ZephyrAccent}"/>
+                        </Trigger>
+                        <!-- The dialog's primary action reads as the filled button -->
+                        <Trigger Property="IsDefault" Value="True">
+                            <Setter TargetName="Bd" Property="Background"  Value="{DynamicResource ZephyrAccent}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource ZephyrAccent}"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsDefault"   Value="True"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="Bd" Property="Background"  Value="{DynamicResource ZephyrAccentHover}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource ZephyrAccentHover}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsDefault" Value="True"/>
+                                <Condition Property="IsPressed" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ZephyrAccent}"/>
+                            <Setter TargetName="Bd" Property="Opacity"    Value="0.85"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource ZephyrTextDisabled}"/>
+                            <Setter Property="Cursor" Value="Arrow"/>
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.55"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── Accent button (primary action in a dialog) ──────────────────── -->
+    <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background"  Value="{DynamicResource ZephyrAccent}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ZephyrAccent}"/>
+        <Setter Property="Foreground"  Value="White"/>
+        <Setter Property="FontWeight"  Value="SemiBold"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="5"
+                            SnapsToDevicePixels="True"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background"  Value="{DynamicResource ZephyrAccentHover}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource ZephyrAccentHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
                             <Setter Property="Cursor" Value="Arrow"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -598,6 +702,125 @@
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── Setting card ───────────────────────────────────────────────────
+         A whole settings row rendered as one clickable card: the label, the
+         description and the toggle all live inside the button surface, so it
+         is obvious what can be clicked.                                     -->
+    <Style x:Key="SettingCard" TargetType="CheckBox">
+        <Setter Property="Foreground"           Value="{DynamicResource ZephyrTextPrimary}"/>
+        <Setter Property="FontSize"             Value="13"/>
+        <Setter Property="Cursor"               Value="Hand"/>
+        <Setter Property="Padding"              Value="12,10"/>
+        <Setter Property="Margin"               Value="0,0,0,8"/>
+        <Setter Property="HorizontalAlignment"  Value="Stretch"/>
+        <Setter Property="FocusVisualStyle"     Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Border x:Name="Card"
+                            Background="{DynamicResource ZephyrElevated}"
+                            BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="1"
+                            CornerRadius="6" SnapsToDevicePixels="True"
+                            Padding="{TemplateBinding Padding}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ContentPresenter Grid.Column="0" VerticalAlignment="Center"/>
+                            <Border x:Name="Box" Grid.Column="1" Width="18" Height="18" CornerRadius="3"
+                                    Margin="14,0,0,0" VerticalAlignment="Center"
+                                    BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="1.5"
+                                    Background="{DynamicResource ZephyrSurface}">
+                                <TextBlock x:Name="Check" Text="✓" FontSize="12" FontWeight="Bold"
+                                           Foreground="{DynamicResource ZephyrAccent}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Visibility="Collapsed"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Check" Property="Visibility"  Value="Visible"/>
+                            <Setter TargetName="Box"   Property="BorderBrush" Value="{DynamicResource ZephyrAccent}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Card" Property="Background"  Value="{DynamicResource ZephyrHover}"/>
+                            <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource ZephyrAccent}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Card" Property="Background" Value="{DynamicResource ZephyrPressed}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource ZephyrAccent}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                            <Setter Property="Cursor"  Value="Arrow"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Same card, for a one-of-many choice -->
+    <Style x:Key="SettingCardRadio" TargetType="RadioButton">
+        <Setter Property="Foreground"           Value="{DynamicResource ZephyrTextPrimary}"/>
+        <Setter Property="FontSize"             Value="13"/>
+        <Setter Property="Cursor"               Value="Hand"/>
+        <Setter Property="Padding"              Value="12,10"/>
+        <Setter Property="Margin"               Value="0,0,0,8"/>
+        <Setter Property="HorizontalAlignment"  Value="Stretch"/>
+        <Setter Property="FocusVisualStyle"     Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Card"
+                            Background="{DynamicResource ZephyrElevated}"
+                            BorderBrush="{DynamicResource ZephyrBorder}" BorderThickness="1"
+                            CornerRadius="6" SnapsToDevicePixels="True"
+                            Padding="{TemplateBinding Padding}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid Grid.Column="0" Width="18" Height="18" Margin="0,0,12,0" VerticalAlignment="Center">
+                                <Ellipse x:Name="Ring" Stroke="{DynamicResource ZephyrBorder}" StrokeThickness="1.5"
+                                         Fill="{DynamicResource ZephyrSurface}"/>
+                                <Ellipse x:Name="Dot" Width="8" Height="8"
+                                         Fill="{DynamicResource ZephyrAccent}" Visibility="Collapsed"/>
+                            </Grid>
+                            <ContentPresenter Grid.Column="1" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Dot"  Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="Ring" Property="Stroke"     Value="{DynamicResource ZephyrAccent}"/>
+                            <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource ZephyrAccent}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Card" Property="Background"  Value="{DynamicResource ZephyrHover}"/>
+                            <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource ZephyrAccent}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Card" Property="Background" Value="{DynamicResource ZephyrPressed}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource ZephyrAccent}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                            <Setter Property="Cursor"  Value="Arrow"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

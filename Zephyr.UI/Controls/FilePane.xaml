@@ -10,6 +10,10 @@
              the scroll-viewer templates put Padding on the header+content area only,
              which keeps the gutter inboard of the vertical scrollbar. -->
         <Thickness x:Key="ListGutter">9,0,9,0</Thickness>
+
+        <!-- Pane chrome (nav arrows, breadcrumbs, toolbar toggles) stays flat —
+             the framed button look is for dialogs and settings. -->
+        <Style TargetType="Button" BasedOn="{StaticResource IconButton}"/>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
