@@ -24,10 +24,14 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # Stamp the exe with the tag's version (v1.2.3 -> 1.2.3) so file properties
+      # show the release number instead of the SDK default 1.0.0.
       - name: Publish (self-contained win-x64)
+        shell: bash
         run: >
           dotnet publish Zephyr.UI/Zephyr.UI.csproj
           -c Release -r win-x64 --self-contained true
+          -p:Version="${GITHUB_REF_NAME#v}"
           -o publish
 
       - name: Zip build
