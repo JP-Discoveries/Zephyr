@@ -122,6 +122,8 @@ public static class ShellIntegrationService
         using var run = Registry.CurrentUser.OpenSubKey(StartupRunKey, writable: true);
         run?.SetValue(HelperRunValue, $"wscript.exe \"{HelperVbs}\"");
 
+        SetExplorerWinEDisabled(true);
+
         // Wait for the old helper to process and delete the stop file, then start fresh
         System.Threading.Thread.Sleep(2500);
         try { if (File.Exists(HelperStop)) File.Delete(HelperStop); } catch { }
@@ -139,8 +141,33 @@ public static class ShellIntegrationService
         using var run = Registry.CurrentUser.OpenSubKey(StartupRunKey, writable: true);
         run?.DeleteValue(HelperRunValue, throwOnMissingValue: false);
 
+        SetExplorerWinEDisabled(false);
+
         // Signal any running helper to exit (it polls this file every 2 s)
         try { File.WriteAllText(HelperStop, ""); } catch { }
+    }
+
+    // Recent Windows 11 builds have Explorer RegisterHotKey Win+E itself at sign-in,
+    // before the helper starts, so the helper's registration fails with
+    // ERROR_HOTKEY_ALREADY_REGISTERED forever. Listing "E" in Explorer's
+    // DisabledHotkeys stops Explorer claiming it. Explorer reads the value at
+    // startup, so it takes effect from the next sign-in or Explorer restart.
+    private const string ExplorerAdvancedKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
+
+    private static void SetExplorerWinEDisabled(bool disabled)
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(ExplorerAdvancedKey);
+            var current = key.GetValue("DisabledHotkeys") as string ?? "";
+            var updated = disabled
+                ? (current.Contains('E', StringComparison.OrdinalIgnoreCase) ? current : current + "E")
+                : current.Replace("E", "", StringComparison.OrdinalIgnoreCase);
+            if (updated == current) return;
+            if (updated.Length == 0) key.DeleteValue("DisabledHotkeys", throwOnMissingValue: false);
+            else key.SetValue("DisabledHotkeys", updated, RegistryValueKind.String);
+        }
+        catch { }
     }
 
     private static string BuildHelperPs1(string exePath)
